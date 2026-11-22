@@ -1,5 +1,9 @@
 /**
- * POST /api/chat — the Low Vision Navigator assistant.
+ * POST /api/chat — the Low Vision Navigator assistant (host-independent core).
+ *
+ * Uses only the web-standard Request/Response APIs, so the same code runs on
+ * Cloudflare Pages Functions (functions/api/chat.ts) and Netlify Functions
+ * (netlify/functions/chat.mts). Each host passes its own environment in.
  *
  * Request body:
  *   {
@@ -15,17 +19,22 @@
  *   { type: 'error', message }    — something went wrong (already user-friendly)
  *   { type: 'done' }
  *
- * Requires the ANTHROPIC_API_KEY environment variable (set it in Netlify →
- * Site configuration → Environment variables). Optional: CHAT_MODEL,
- * CHAT_EFFORT (low | medium | high).
+ * Settings (from the host's environment variables): ANTHROPIC_API_KEY
+ * (required), CHAT_MODEL, CHAT_EFFORT (low | medium | high).
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { Config, Context } from '@netlify/functions';
 import { searchSite, getPage, searchDirectory, siteMap, isKnownPath } from './knowledge.ts';
 
-const MODEL = process.env.CHAT_MODEL || 'claude-opus-5-5';
-const EFFORT = (['low', 'medium', 'high'] as const).find((e) => e === process.env.CHAT_EFFORT) ?? 'medium';
+export interface ChatEnv {
+  ANTHROPIC_API_KEY?: string;
+  /** Optional API endpoint override (testing or a gateway). */
+  ANTHROPIC_BASE_URL?: string;
+  CHAT_MODEL?: string;
+  CHAT_EFFORT?: string;
+}
+
+const DEFAULT_MODEL = 'claude-opus-5-5';
 
 const MAX_HISTORY_MESSAGES = 24;
 const MAX_MESSAGE_CHARS = 4000;
@@ -223,7 +232,10 @@ function statusFor(name: string): string {
 
 // ── Handler ───────────────────────────────────────────────────────────────
 
-export default async (req: Request, _context: Context) => {
+export async function handleChat(req: Request, env: ChatEnv): Promise<Response> {
+  const MODEL = env.CHAT_MODEL || DEFAULT_MODEL;
+  const EFFORT = (['low', 'medium', 'high'] as const).find((e) => e === env.CHAT_EFFORT) ?? 'medium';
+
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405, headers: { Allow: 'POST' } });
   }
@@ -234,7 +246,7 @@ export default async (req: Request, _context: Context) => {
     return Response.json({ error: 'Cross-origin requests are not allowed.' }, { status: 403 });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!env.ANTHROPIC_API_KEY) {
     return Response.json(
       { error: 'The assistant is not configured yet. Please try again later.' },
       { status: 503 },
@@ -273,7 +285,7 @@ export default async (req: Request, _context: Context) => {
     return { role: m.role, content: m.content };
   });
 
-  const client = new Anthropic();
+  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, ...(env.ANTHROPIC_BASE_URL ? { baseURL: env.ANTHROPIC_BASE_URL } : {}) });
   const encoder = new TextEncoder();
 
   const body = new ReadableStream<Uint8Array>({
@@ -402,9 +414,4 @@ export default async (req: Request, _context: Context) => {
       'X-Content-Type-Options': 'nosniff',
     },
   });
-};
-
-export const config: Config = {
-  path: '/api/chat',
-  method: 'POST',
-};
+}

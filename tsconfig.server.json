@@ -12,5 +12,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["functions/**/*.ts", "functions/**/*.mts"]
+  "include": ["server/**/*.ts", "functions/**/*.ts", "netlify/functions/**/*.mts"]
 }

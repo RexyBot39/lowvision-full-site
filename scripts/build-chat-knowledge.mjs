@@ -4,7 +4,7 @@
  * Runs after `scripts/prerender.mjs`. Reads every prerendered page in dist/,
  * keeps only the <main> content, converts it to plain text (keeping headings,
  * list items and outbound link URLs), splits it into heading-based sections,
- * and writes netlify/functions/chat/site-pages.json, which the chat function
+ * and writes server/chat/site-pages.json, which the chat function
  * bundles and searches at request time.
  *
  * The output is committed so the function also works in local development
@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 const distDir = resolve(root, 'dist');
-const outFile = resolve(root, 'netlify/functions/chat/site-pages.json');
+const outFile = resolve(root, 'server/chat/site-pages.json');
 
 const MAX_SECTION_CHARS = 2500;
 

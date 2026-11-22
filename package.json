@@ -8,7 +8,7 @@
     "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-server && node scripts/prerender.mjs && node scripts/build-chat-knowledge.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc -p netlify/tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc -p tsconfig.server.json"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.12.0",

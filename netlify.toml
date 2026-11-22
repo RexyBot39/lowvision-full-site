@@ -4,8 +4,9 @@
   publish = "dist"
   command = "npm run build"
 
-# The AI assistant (netlify/functions/chat) — needs ANTHROPIC_API_KEY set in
-# Site configuration → Environment variables.
+# The AI assistant (netlify/functions/chat.mts → server/chat) — needs
+# ANTHROPIC_API_KEY set in Site configuration → Environment variables.
+# On Cloudflare Pages the same code is served by functions/api/chat.ts.
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"

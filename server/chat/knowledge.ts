@@ -12,9 +12,9 @@
  */
 
 import sitePages from './site-pages.json';
-import { faqs } from '../../../src/data/faqs';
-import { directorySeedData } from '../../../src/data/directorySeed';
-import type { Resource } from '../../../src/types';
+import { faqs } from '../../src/data/faqs';
+import { directorySeedData } from '../../src/data/directorySeed';
+import type { Resource } from '../../src/types';
 
 interface PageSection {
   heading: string;
