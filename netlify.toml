@@ -4,6 +4,12 @@
   publish = "dist"
   command = "npm run build"
 
+# The AI assistant (netlify/functions/chat) — needs ANTHROPIC_API_KEY set in
+# Site configuration → Environment variables.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # Security headers for all pages
 [[headers]]
   for = "/*"
@@ -11,7 +17,7 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Permissions-Policy = "camera=(), microphone=(self), geolocation=()"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co; frame-ancestors 'none';"
 
 # Long-lived immutable cache for hashed assets
