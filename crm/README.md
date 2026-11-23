@@ -34,7 +34,14 @@ In the same Railway project as the website:
 4. **Domain:** Settings → Networking → Generate Domain, or add a custom domain such as `crm.lowvisionnavigator.org`. Then make `ESPOCRM_SITE_URL` match it.
 5. Deploy. The first start installs EspoCRM (about a minute). The log shows `Installation completed successfully` and then `EspoCRM is ready; starting the job daemon`. Sign in with the admin username and password.
 
-The admin username and password are only used for the first install. Change the password later inside EspoCRM, not through the variable.
+The admin username and password are only read on the **first** install. If the variables weren't set yet at that moment, EspoCRM used its defaults: username `admin`, password `password`. Change those immediately.
+
+**Can't sign in? Reset the admin account:**
+1. Set `ESPOCRM_ADMIN_USERNAME` and `ESPOCRM_ADMIN_PASSWORD` to what you want, and add `ESPOCRM_RESET_ADMIN=true`.
+2. Redeploy. About a minute after start, the deploy log shows `Password set for admin user "…"`.
+3. Sign in, then remove `ESPOCRM_RESET_ADMIN`.
+
+The reset creates the user if it doesn't exist and sets its password. It runs once per username and password pair, so leaving the switch on won't undo a password you later change inside EspoCRM. The password is never written to the logs.
 
 **Upgrading:** change the version in `crm/Dockerfile` (tags at https://hub.docker.com/r/espocrm/espocrm/tags), commit, and deploy. EspoCRM migrates the database on start. Back up first: Railway volumes and the MySQL service both support backups.
 
@@ -68,7 +75,16 @@ The script matches organizations by name, so you can re-run it whenever the dire
 
 **The directory has no email addresses.** Before emailing an organization, open its Account in EspoCRM and add a contact email. A named contact (Contacts → linked to the Account) usually beats a generic `info@` address.
 
-## 4. Send the outreach email
+## 4. Use the CRM from Claude Code (MCP)
+
+`.mcp.json` registers EspoCRM's MCP endpoint (`/api/v1/Mcp/lowvisionnavigator`) as the `espocrm` server, so Claude Code sessions on this repo can read and update the CRM directly.
+
+- **API user:** EspoCRM → Administration → API Users, authentication **API Key**. Its role must have the **MCP** scope enabled (otherwise requests fail with `403 No access to 'Mcp' scope`), plus access to Accounts, Contacts, Target Lists and Campaigns.
+- **Claude Code cloud sessions:** the key is saved as a network secret on the repo's cloud environment, and the proxy adds it as `X-Api-Key`. Nothing secret is in the repo.
+- **Claude Code on your computer:** set `ESPOCRM_API_KEY` in your shell before starting Claude Code. Approve the `espocrm` server when asked.
+- `npm run crm:sync` in a cloud session: set `ESPOCRM_API_KEY=proxy-injected`; the proxy replaces it with the real key.
+
+## 5. Send the outreach email
 
 1. **Campaigns → Create Campaign**, type **Email**, target list **"Low Vision Navigator outreach"**.
 2. Create an **Email Template**. EspoCRM adds an unsubscribe link to campaign emails; keep it.

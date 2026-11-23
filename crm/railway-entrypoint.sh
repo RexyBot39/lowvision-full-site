@@ -68,6 +68,30 @@ fi
 (
     cd "$APP"
     until bin/command app-check >/dev/null 2>&1; do sleep 10; done
+
+    # Optional admin reset: EspoCRM reads ESPOCRM_ADMIN_USERNAME/PASSWORD only on
+    # the very first install. With ESPOCRM_RESET_ADMIN=true, create that user if
+    # missing and set its password. Applied once per username+password pair
+    # (remembered on the volume), so a password changed later in EspoCRM isn't
+    # reverted on restart.
+    if [ "${ESPOCRM_RESET_ADMIN:-}" = "true" ] && [ -n "${ESPOCRM_ADMIN_USERNAME:-}" ] && [ -n "${ESPOCRM_ADMIN_PASSWORD:-}" ]; then
+        marker="$PERSIST/.admin-reset"
+        fingerprint=$(printf '%s:%s' "$ESPOCRM_ADMIN_USERNAME" "$ESPOCRM_ADMIN_PASSWORD" | sha256sum | cut -d' ' -f1)
+        if [ "$(cat "$marker" 2>/dev/null || true)" = "$fingerprint" ]; then
+            echo >&2 "info: Admin reset already applied for these credentials; skipping."
+        else
+            bin/command create-admin-user "$ESPOCRM_ADMIN_USERNAME" >/dev/null 2>&1 \
+                && echo >&2 "info: Created admin user \"$ESPOCRM_ADMIN_USERNAME\"." \
+                || echo >&2 "info: Admin user \"$ESPOCRM_ADMIN_USERNAME\" already exists."
+            if printf '%s\n' "$ESPOCRM_ADMIN_PASSWORD" | bin/command set-password "$ESPOCRM_ADMIN_USERNAME" >/dev/null 2>&1; then
+                echo >&2 "info: Password set for admin user \"$ESPOCRM_ADMIN_USERNAME\". You can remove ESPOCRM_RESET_ADMIN now."
+                [ -d "$PERSIST" ] && printf '%s' "$fingerprint" > "$marker"
+            else
+                echo >&2 "error: Could not set the password for \"$ESPOCRM_ADMIN_USERNAME\"."
+            fi
+        fi
+    fi
+
     [ -d "$PERSIST" ] && chown -R www-data:www-data "$PERSIST"
     echo >&2 "info: EspoCRM is ready; starting the job daemon."
     while true; do
