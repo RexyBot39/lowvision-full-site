@@ -232,6 +232,31 @@ function statusFor(name: string): string {
 
 // ── Handler ───────────────────────────────────────────────────────────────
 
+/**
+ * The SDK's stream helper decorates output items with client-side fields
+ * (`parsed_arguments` on function calls, `parsed` on output text). The API
+ * rejects those as unknown parameters when the items are sent back as input,
+ * so strip them.
+ */
+function toInputItem(item: OpenAI.Responses.ResponseOutputItem): OpenAI.Responses.ResponseInputItem {
+  const copy: Record<string, unknown> = { ...item };
+  delete copy.parsed_arguments;
+  if (Array.isArray(copy.content)) {
+    copy.content = copy.content.map((part: unknown) => {
+      if (!part || typeof part !== 'object') return part;
+      const rest: Record<string, unknown> = { ...(part as Record<string, unknown>) };
+      delete rest.parsed;
+      return rest;
+    });
+  }
+  return copy as unknown as OpenAI.Responses.ResponseInputItem;
+}
+
+/** Short, non-sensitive code shown to the visitor so problems can be reported. */
+function errorCode(err: InstanceType<typeof OpenAI.APIError>): string {
+  return `OpenAI ${err.status ?? 'error'}${err.code ? ` ${err.code}` : ''}`;
+}
+
 const EFFORTS = ['low', 'medium', 'high'] as const;
 
 export async function handleChat(req: Request, env: ChatEnv): Promise<Response> {
@@ -334,7 +359,7 @@ export async function handleChat(req: Request, env: ChatEnv): Promise<Response> 
 
           const response = await stream.finalResponse();
           // Pass every output item (reasoning, tool calls, messages) back as input for the next step.
-          input.push(...(response.output as OpenAI.Responses.ResponseInputItem[]));
+          input.push(...response.output.map(toInputItem));
 
           for (const item of response.output) {
             if (item.type !== 'message') continue;
@@ -389,10 +414,17 @@ export async function handleChat(req: Request, env: ChatEnv): Promise<Response> 
         if (req.signal.aborted || err instanceof OpenAI.APIUserAbortError) {
           // The visitor stopped the answer; nothing to report.
         } else if (err instanceof OpenAI.RateLimitError) {
-          send({ type: 'error', message: 'The assistant is very busy right now. Please wait a minute and try again.' });
+          console.error('OpenAI API error', err.status, err.code, err.message);
+          send({
+            type: 'error',
+            message: `The assistant is very busy right now. Please wait a minute and try again. (${errorCode(err)})`,
+          });
         } else if (err instanceof OpenAI.APIError) {
-          console.error('OpenAI API error', err.status, err.message);
-          send({ type: 'error', message: 'The assistant ran into a problem. Please try again in a moment.' });
+          console.error('OpenAI API error', err.status, err.code, err.param ?? '', err.message, err.requestID ?? '');
+          send({
+            type: 'error',
+            message: `The assistant ran into a problem. Please try again in a moment. (${errorCode(err)})`,
+          });
         } else {
           console.error('Chat handler error', err);
           send({ type: 'error', message: 'Something went wrong. Please try again.' });
