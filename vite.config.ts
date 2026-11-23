@@ -12,6 +12,9 @@ export default defineConfig({
   },
   server: {
     // In development, run `npm run dev:server` alongside `npm run dev`
-    proxy: { '/api': 'http://localhost:3000' },
+    proxy: {
+      '/api': 'http://localhost:3000',
+      '/ingest': 'http://localhost:3000',
+    },
   },
 });

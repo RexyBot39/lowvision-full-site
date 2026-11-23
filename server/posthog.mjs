@@ -21,6 +21,10 @@
  */
 
 import express from 'express';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { BatchLogRecordProcessor, LoggerProvider } from '@opentelemetry/sdk-logs';
+import { PostHog } from 'posthog-node';
 
 const region = process.env.POSTHOG_REGION === 'eu' ? 'eu' : 'us';
 const strip = (u) => u.replace(/\/+$/, '');
@@ -37,6 +41,44 @@ export const posthog = {
 export const collectionEnabled = () => !!posthog.projectKey;
 export const reportingEnabled = () => !!(posthog.projectId && posthog.personalKey);
 
+if (!posthog.projectKey && process.env.NODE_ENV !== 'production') {
+  console.warn(
+    'POSTHOG_PROJECT_KEY variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once POSTHOG_PROJECT_KEY is configured',
+  );
+}
+
+// Shared by the OpenAI wrapper and tool spans; it batches asynchronously in this long-running server.
+export const aiPosthog = posthog.projectKey
+  ? new PostHog(posthog.projectKey, { host: posthog.ingestHost, privacyMode: false })
+  : null;
+
+// This provider is deliberately separate from the app's existing console logs.
+// Only records emitted through posthogLogger below leave through the OTLP exporter.
+const posthogLogProvider = posthog.projectKey
+  ? new LoggerProvider({
+      resource: resourceFromAttributes({
+        'service.name': 'low-vision-navigator',
+        'deployment.environment': process.env.NODE_ENV || 'development',
+      }),
+      processors: [
+        new BatchLogRecordProcessor(
+          new OTLPLogExporter({
+            url: `${posthog.ingestHost}/i/v1/logs`,
+            headers: { Authorization: `Bearer ${posthog.projectKey}` },
+          }),
+        ),
+      ],
+    })
+  : null;
+
+// Do not obtain this from the global logs API: the local provider owns the exporter.
+export const posthogLogger = posthogLogProvider?.getLogger('low-vision-navigator-posthog') ?? null;
+export const shutdownPosthog = () =>
+  Promise.allSettled([
+    aiPosthog?.shutdown(1_000) ?? Promise.resolve(),
+    posthogLogProvider?.shutdown() ?? Promise.resolve(),
+  ]);
+
 // ── /ingest proxy ──────────────────────────────────────────────────────────
 
 const HOP_BY_HOP = new Set([
@@ -47,7 +89,7 @@ export const ingestProxy = express.Router();
 ingestProxy.use(express.raw({ type: () => true, limit: '5mb' }));
 ingestProxy.use(async (req, res) => {
   if (!collectionEnabled()) return res.status(404).end();
-  const upstream = req.path.startsWith('/static/') ? posthog.assetsHost : posthog.ingestHost;
+  const upstream = req.path.startsWith('/static/') || req.path.startsWith('/array/') ? posthog.assetsHost : posthog.ingestHost;
   const query = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
   const headers = {};
   for (const name of ['content-type', 'content-encoding', 'user-agent', 'accept', 'accept-language']) {
@@ -75,7 +117,17 @@ ingestProxy.use(async (req, res) => {
 
 // ── HogQL queries for the admin dashboard ──────────────────────────────────
 
-export const TRACKED_EVENTS = ['intake_started', 'intake_completed', 'contact_submitted', 'assistant_question'];
+export const TRACKED_EVENTS = [
+  'intake_started',
+  'intake_completed',
+  'contact_submitted',
+  'assistant_question',
+  'account_signed_in',
+  'account_created',
+  'directory_search_submitted',
+  'site_search_submitted',
+  'intake_progress_saved',
+];
 
 async function hogql(query) {
   const r = await fetch(`${posthog.appHost}/api/projects/${encodeURIComponent(posthog.projectId)}/query/`, {

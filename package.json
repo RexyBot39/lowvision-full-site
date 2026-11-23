@@ -14,11 +14,16 @@
     "build:chat": "esbuild server/chat/handler.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=dist-node/chat.mjs"
   },
   "dependencies": {
+    "@opentelemetry/exporter-logs-otlp-http": "^0.301.2",
+    "@opentelemetry/resources": "^3.1.1",
+    "@opentelemetry/sdk-logs": "^3.1.1",
+    "@posthog/ai": "^8.22.0",
     "express": "^4.22.3",
     "lucide-react": "^0.344.0",
     "openai": "^7.62.0",
     "pg": "^8.23.1",
     "posthog-js": "^1.454.0",
+    "posthog-node": "^5.74.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-helmet-async": "^2.0.5",

@@ -48,6 +48,7 @@ interface ChatState {
 
 const MESSAGES_KEY = 'lv-chat-messages';
 const PREFS_KEY = 'lv-chat-prefs';
+const CONVERSATION_KEY = 'lv-chat-conversation-id';
 
 const DEFAULT_PREFS: ChatPreferences = {
   readAloud: false,
@@ -77,6 +78,24 @@ function save(storage: 'local' | 'session', key: string, value: unknown) {
     /* storage unavailable (private mode, blocked) — the chat still works */
   }
 }
+
+function newId() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function newConversationId() {
+  return `chat-${newId()}`;
+}
+
+function loadConversationId() {
+  const saved = load('session', CONVERSATION_KEY, '');
+  if (typeof saved === 'string' && /^[-A-Za-z0-9_~.@()!'|:]+$/.test(saved)) return saved;
+  const id = newConversationId();
+  save('session', CONVERSATION_KEY, id);
+  return id;
+}
+
+let conversationId = loadConversationId();
 
 let state: ChatState = {
   messages: load<ChatMessage[]>('session', MESSAGES_KEY, []).filter((m) => !m.pending),
@@ -111,6 +130,8 @@ export function setPrefs(patch: Partial<ChatPreferences>) {
 
 export function clearConversation() {
   abortController?.abort();
+  conversationId = newConversationId();
+  save('session', CONVERSATION_KEY, conversationId);
   setState({ messages: [], busy: false, status: '' });
 }
 
@@ -118,10 +139,6 @@ let abortController: AbortController | null = null;
 
 export function stopAnswer() {
   abortController?.abort();
-}
-
-function newId() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
 function updateMessage(id: string, patch: Partial<ChatMessage>) {
@@ -157,6 +174,7 @@ export async function sendMessage(text: string, callbacks: SendCallbacks = {}) {
       headers: { 'Content-Type': 'application/json' },
       signal: abortController.signal,
       body: JSON.stringify({
+        conversationId,
         messages: history.map((m) => ({ role: m.role, content: m.content })),
         pagePath: typeof window !== 'undefined' ? window.location.pathname : undefined,
         preferences: { brief: state.prefs.brief },

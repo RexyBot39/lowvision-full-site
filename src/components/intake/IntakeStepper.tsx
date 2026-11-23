@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronLeft, Save, Check } from 'lucide-react';
 import { useIntake } from '../../hooks/useIntake';
 import { US_STATES, US_STATE_NAMES } from '../../data/directorySeed';
+import { trackEvent } from '../../lib/analytics';
 
 const TOTAL_STEPS = 10;
 
@@ -152,6 +153,11 @@ export function IntakeStepper() {
     } else {
       nextStep(TOTAL_STEPS);
     }
+  }
+
+  function handleSaveProgress() {
+    saveAndShowMessage();
+    trackEvent('intake_progress_saved', { step_number: currentStep + 1 });
   }
 
   const progress = ((currentStep + 1) / TOTAL_STEPS) * 100;
@@ -526,7 +532,7 @@ export function IntakeStepper() {
         </button>
 
         <button
-          onClick={saveAndShowMessage}
+          onClick={handleSaveProgress}
           className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-gray-300 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
         >
           <Save className="h-4 w-4" aria-hidden="true" />

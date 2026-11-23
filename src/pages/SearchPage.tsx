@@ -6,6 +6,7 @@ import { siteSearchIndex, type SiteSearchEntry } from '../data/siteSearchIndex';
 import { faqs } from '../data/faqs';
 import { directorySeedData } from '../data/directorySeed';
 import type { FAQItem } from '../types';
+import { trackEvent } from '../lib/analytics';
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
 
@@ -158,8 +159,15 @@ export function SearchPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!query.trim()) return;
+    trackEvent('site_search_submitted', {
+      total_results: totalResults,
+      page_result_count: pageResults.length,
+      faq_result_count: faqResults.length,
+      directory_results_available: directoryCount > 0,
+    });
     // If only directory results, go straight to the filtered directory
-    if (query.trim() && directoryCount > 0 && pageResults.length === 0 && faqResults.length === 0) {
+    if (directoryCount > 0 && pageResults.length === 0 && faqResults.length === 0) {
       navigate(`/resources?q=${encodeURIComponent(query.trim())}`);
     }
   }
