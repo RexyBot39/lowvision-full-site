@@ -7,5 +7,6 @@ Disallow: /intake/results
 Disallow: /intake/follow-up
 Disallow: /intake/results/printable-plan
 Disallow: /saved-plan
+Disallow: /admin
 
 Sitemap: https://lowvisionnavigator.org/sitemap.xml

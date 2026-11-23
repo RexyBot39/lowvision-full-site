@@ -6,6 +6,7 @@
  * preferences such as read-aloud are kept in localStorage.
  */
 
+import { trackEvent } from '../../lib/analytics';
 import { useSyncExternalStore } from 'react';
 
 export interface ChatSource {
@@ -143,6 +144,7 @@ export async function sendMessage(text: string, callbacks: SendCallbacks = {}) {
   const history = [...state.messages.filter((m) => !m.error), userMsg];
 
   setState({ messages: [...state.messages, userMsg, reply], busy: true, status: 'Thinking…' });
+  trackEvent('assistant_question'); // the question text is never sent to analytics
 
   abortController = new AbortController();
   let answer = '';

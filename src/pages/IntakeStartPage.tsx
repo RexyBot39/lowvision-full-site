@@ -4,6 +4,7 @@ import { IntakeStepper } from '../components/intake/IntakeStepper';
 import { useIntake } from '../hooks/useIntake';
 import { DisclaimerBox } from '../components/ui/DisclaimerBox';
 import { PageSEO } from '../components/seo/PageSEO';
+import { trackEvent } from '../lib/analytics';
 
 export function IntakeStartPage() {
   const [searchParams] = useSearchParams();
@@ -20,6 +21,7 @@ export function IntakeStartPage() {
     } else if (!resume) {
       // Fresh start — reset to step 0
       goToStep(0);
+      trackEvent('intake_started', { mode: mode === 'caregiver' ? 'caregiver' : 'patient' });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

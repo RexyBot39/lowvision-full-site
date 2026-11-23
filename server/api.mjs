@@ -54,7 +54,16 @@ async function createSession(res, req, userId) {
   });
 }
 
-const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name });
+/** Accounts whose email is listed in ADMIN_EMAILS (comma-separated) can open /admin. */
+export function isAdminEmail(email) {
+  const admins = (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return !!email && admins.includes(String(email).toLowerCase());
+}
+
+const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name, isAdmin: isAdminEmail(u.email) });
 
 // Simple in-memory rate limiter for auth endpoints (per IP).
 const attempts = new Map();
@@ -94,7 +103,7 @@ apiRouter.use((req, res, next) => {
   next();
 });
 
-async function loadUser(req, _res, next) {
+export async function loadUser(req, _res, next) {
   req.user = null;
   const token = readCookie(req, COOKIE);
   if (token && db) {

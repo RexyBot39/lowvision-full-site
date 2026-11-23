@@ -85,6 +85,7 @@ const FAQPage = lazyNamed(() => import('./pages/FAQPage'), 'FAQPage');
 const AssistantPage = lazyNamed(() => import('./pages/AssistantPage'), 'AssistantPage');
 const SavedPlanPage = lazyNamed(() => import('./pages/SavedPlanPage'), 'SavedPlanPage');
 const LoginPage = lazyNamed(() => import('./pages/LoginPage'), 'LoginPage');
+const AdminPage = lazyNamed(() => import('./pages/AdminPage'), 'AdminPage');
 
 function LoadingSpinner() {
   return (
@@ -199,6 +200,7 @@ export default function App() {
             <Route path="/saved-plan" element={<SavedPlanPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin" element={<AdminPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

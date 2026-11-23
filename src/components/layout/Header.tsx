@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Search, Bookmark, ChevronDown, LogOut, User as UserIcon } from 'lucide-react';
+import { Menu, X, Search, Bookmark, ChevronDown, LogOut, User as UserIcon, BarChart3 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface NavLink { label: string; href: string; }
@@ -311,6 +311,16 @@ export function Header() {
                         <Bookmark className="h-4 w-4 text-gray-400" aria-hidden="true" />
                         My Saved Plan
                       </Link>
+                      {user.isAdmin && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <BarChart3 className="h-4 w-4 text-gray-400" aria-hidden="true" />
+                          Admin Dashboard
+                        </Link>
+                      )}
                       <button
                         onClick={async () => { setUserMenuOpen(false); await signOut(); navigate('/'); }}
                         className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -419,6 +429,15 @@ export function Header() {
                 >
                   Find Local Services
                 </Link>
+                {user?.isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <BarChart3 className="h-4 w-4" aria-hidden="true" />
+                    Admin Dashboard
+                  </Link>
+                )}
                 {user ? (
                   <button
                     onClick={async () => { setMobileOpen(false); await signOut(); navigate('/'); }}

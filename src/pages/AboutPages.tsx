@@ -3,6 +3,7 @@ import { ContentPageLayout } from '../components/ui/ContentPageLayout';
 import { CheckCircle, ArrowRight, Type, Eye, Monitor } from 'lucide-react';
 import { useAccessibility } from '../hooks/useAccessibility';
 import { api, ApiError } from '../lib/api';
+import { trackEvent } from '../lib/analytics';
 
 function aboutPageSchema(name: string) {
   return {
@@ -234,7 +235,7 @@ export function PrivacyPage() {
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-3">Analytics</h2>
           <p className="text-gray-600 leading-relaxed">
-            We count page views on our own servers—no Google Analytics or other third-party tracker. When you open a page, your browser sends us only the page address (without anything after a "?" or "#") and, for the first page you visit, the name of the website that linked you here. We add one to a daily total for that page. We don't use cookies for this, and we never record your IP address, browser details, or anything that could identify you or link one visit to another. If your browser sends Do Not Track or Global Privacy Control, we don't count your visits at all.
+            We use PostHog, an analytics service, to understand which pages are useful and where people get stuck. We set it up to protect your privacy: it doesn't use cookies or store anything on your device, it doesn't build a profile of you, and it never records your screen, what you type, or your conversations with the assistant. We send it the page you're on (with anything after a "?" or "#" removed), the site that linked you here, your general device type, and a few anonymous events such as "intake completed." Your IP address is passed along only so PostHog can estimate your country and count daily visitors without cookies; PostHog is told not to store it. Analytics data is sent through our own website address. If your browser sends Do Not Track or Global Privacy Control, we don't collect analytics at all.
           </p>
         </section>
         <section>
@@ -246,7 +247,7 @@ export function PrivacyPage() {
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-3">What we don't do</h2>
           <ul className="space-y-2">
-            {['We do not sell user data.', 'We do not use tracking cookies, tracking pixels, third-party analytics, or advertising networks.', 'We do not require account creation or email submission to use the platform.', 'We do not share data with listed organizations or partners.'].map((item) => (
+            {['We do not sell user data.', 'We do not use tracking cookies, tracking pixels, or advertising networks.', 'We do not require account creation or email submission to use the platform.', 'We do not share data with listed organizations or partners.'].map((item) => (
               <li key={item} className="flex items-start gap-2.5 text-sm text-gray-700">
                 <span className="text-red-400 shrink-0">✕</span>
                 {item}
@@ -291,6 +292,7 @@ export function ContactPage() {
     setSending(true);
     try {
       await api('/contact', { method: 'POST', body: form });
+      trackEvent('contact_submitted', { type: form.type });
       setSubmitted(true);
     } catch (err) {
       if (err instanceof ApiError && err.fields) setErrors(err.fields);

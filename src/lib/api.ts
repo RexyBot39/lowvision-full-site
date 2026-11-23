@@ -2,6 +2,7 @@ export interface ApiUser {
   id: number;
   email: string;
   name: string;
+  isAdmin?: boolean;
 }
 
 export class ApiError extends Error {

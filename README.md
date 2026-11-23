@@ -12,33 +12,64 @@ sync backed by Postgres, and an accessible AI assistant (OpenAI GPT-6 Luna) at
 3. On the web service, add the variables `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
    and `OPENAI_API_KEY` (for the assistant; optional `CHAT_MODEL`, default
    `gpt-6-luna`, and `CHAT_EFFORT`: `low` | `medium` | `high`).
-   Optionally set `ADMIN_TOKEN` (a long random string) to read contact messages
-   and analytics over the API (see below).
+   For the admin dashboard, set `ADMIN_EMAILS` (and optionally the PostHog
+   variables; see below).
 4. Settings → Networking → Generate Domain (or add `lowvisionnavigator.org`).
 
 Tables are created automatically on startup. Health check: `/healthz`.
 
-## Contact form and analytics
+## Admin dashboard (`/admin`)
 
-Both live in `server/public-api.mjs` and use the same Postgres database.
+Sign in with an account whose email is listed in `ADMIN_EMAILS`; an **Admin
+Dashboard** link then appears in the account menu. It has two tabs:
 
-- **Contact form** (`POST /api/contact`): messages are saved to the
-  `contact_messages` table. Spam protection is a honeypot field plus a per-IP
-  limit of 10 messages an hour.
-- **Analytics** (`POST /api/event`): first-party and privacy-friendly. The
-  browser sends only the page path (no query string) and, on the first page of
-  a visit, the referring site's hostname. The server keeps daily counters in
-  `page_views`: no cookies, IPs, user agents or per-visit rows. Do Not Track /
-  Global Privacy Control visitors and bots are not counted. Nothing is sent from
-  `npm run dev`.
+- **Analytics**: page views, visitors, top pages, referrers, devices,
+  countries, and intake/assistant/contact events for the last 7, 30 or 90
+  days, compared with the previous period.
+- **Messages**: contact-form submissions, with reply links and
+  new/handled status.
 
-To read them, either query Postgres directly (Railway → Postgres → Data), or
-with `ADMIN_TOKEN` set:
+Server code: `server/admin-api.mjs` (`/api/admin/*`). Scripts can call the
+same endpoints with `Authorization: Bearer $ADMIN_TOKEN`.
 
-```bash
-curl -H "Authorization: Bearer $ADMIN_TOKEN" https://lowvisionnavigator.org/api/admin/contact-messages
-curl -H "Authorization: Bearer $ADMIN_TOKEN" "https://lowvisionnavigator.org/api/admin/stats?days=30"
-```
+## Analytics (PostHog)
+
+`src/lib/analytics.ts` asks the server which provider to use:
+
+- **PostHog** when `POSTHOG_PROJECT_KEY` is set. Set up to protect privacy:
+  cookieless mode, no person profiles, no autocapture, session recording,
+  surveys or feature flags. Query strings are stripped from every URL, and
+  Do Not Track / Global Privacy Control visitors are never tracked. Events go
+  through this server's `/ingest` proxy (`server/posthog.mjs`), so the site's
+  CSP stays `connect-src 'self'` and ad blockers don't drop them.
+  Custom events: `intake_started`, `intake_completed`, `contact_submitted`
+  (category only) and `assistant_question` (never the text).
+- **Built-in counter** otherwise: daily page counts in the `page_views` table
+  (path and referrer host only).
+
+### Connecting PostHog
+
+1. In PostHog → Project settings:
+   - **turn on cookieless server hash mode.** Without it, PostHog ignores
+     cookieless events.
+   - **turn on "Discard client IP data"**, which the Privacy page promises.
+2. Copy the **Project API key** (`phc_…`) and the **project ID** (the number in
+   the project URL).
+3. Create a **personal API key** (`phx_…`) with the `query:read` scope.
+4. On the Railway web service, set `POSTHOG_PROJECT_KEY`, `POSTHOG_PROJECT_ID`,
+   `POSTHOG_PERSONAL_API_KEY` and `POSTHOG_REGION` (`us` or `eu`), then redeploy.
+
+The startup log shows which mode is active, e.g.
+`[analytics] collection: PostHog; admin reports: PostHog`. Dashboard queries
+are cached for 5 minutes. If PostHog can't be reached, the dashboard falls back
+to the built-in counter and says so.
+
+## Contact form
+
+`POST /api/contact` (`server/public-api.mjs`) saves messages to the
+`contact_messages` table. Spam protection is a honeypot field plus a per-IP
+limit of 10 messages an hour. Read and triage them on the dashboard's
+**Messages** tab.
 
 ## AI assistant
 

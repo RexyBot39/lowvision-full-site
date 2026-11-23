@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { IntakeAnswers } from '../lib/intake/types';
+import { trackEvent } from '../lib/analytics';
 import { PLAN_STORAGE_KEY as STORAGE_KEY, PLAN_SYNC_EVENT, schedulePlanPush } from '../lib/planSync';
 
 interface StoredIntake {
@@ -85,7 +86,10 @@ export function useIntake() {
     setCurrentStep((s) => Math.max(s - 1, 0));
   }, []);
 
-  const markComplete = useCallback(() => setIsComplete(true), []);
+  const markComplete = useCallback(() => {
+    setIsComplete(true);
+    trackEvent('intake_completed');
+  }, []);
 
   const clearIntake = useCallback(() => {
     setAnswers(defaultAnswers);

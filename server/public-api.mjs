@@ -3,10 +3,12 @@
  *
  *   POST /api/contact   — contact form; saves the message to Postgres.
  *   POST /api/event     — privacy-friendly page-view counter (see below).
- *   GET  /api/admin/*   — read contact messages and analytics; requires
- *                         `Authorization: Bearer $ADMIN_TOKEN`.
+ *   GET  /api/analytics-config — tells the browser which analytics to load.
  *
- * Analytics design: the browser sends only the page path (no query string or
+ * Admin reads live in server/admin-api.mjs.
+ *
+ * When PostHog is configured (server/posthog.mjs), the browser sends events
+ * there instead and /api/event is unused. Otherwise, the built-in counter: the browser sends only the page path (no query string or
  * hash) and, on the first page of a visit, the referring site's hostname. The
  * server adds one to a per-day counter for that (path, referrer) pair. Nothing
  * that identifies a person is stored: no cookies, IP addresses, user agents,
@@ -15,8 +17,8 @@
  */
 
 import express from 'express';
-import { timingSafeEqual, createHash } from 'node:crypto';
 import { db } from './db.mjs';
+import { posthog, collectionEnabled } from './posthog.mjs';
 
 export const publicApiRouter = express.Router();
 
@@ -89,6 +91,14 @@ publicApiRouter.post('/contact', requireJson, makeLimiter(10, 60 * 60 * 1000), j
 
 // ── analytics ──────────────────────────────────────────────────────────────
 
+publicApiRouter.get('/analytics-config', (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=300');
+  if (collectionEnabled()) {
+    return res.json({ provider: 'posthog', key: posthog.projectKey, apiHost: '/ingest', uiHost: posthog.appHost });
+  }
+  res.json({ provider: 'builtin' });
+});
+
 function referrerHost(value, ownHost) {
   if (typeof value !== 'string' || !value) return '';
   try {
@@ -116,42 +126,6 @@ publicApiRouter.post('/event', requireJson, makeLimiter(300, 10 * 60 * 1000), js
      ON CONFLICT (day, path, referrer) DO UPDATE SET views = page_views.views + 1`,
     [path, referrer],
   );
-}));
-
-// ── admin (read-only) ──────────────────────────────────────────────────────
-
-const sha256 = (s) => createHash('sha256').update(s).digest();
-
-function requireAdmin(req, res, next) {
-  const expected = process.env.ADMIN_TOKEN;
-  const given = (req.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
-  // Compare hashes so lengths always match for timingSafeEqual.
-  if (!expected || expected.length < 16 || !given || !timingSafeEqual(sha256(given), sha256(expected))) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  if (!db) return res.status(503).json({ error: 'Database not configured' });
-  res.set('Cache-Control', 'no-store');
-  next();
-}
-
-publicApiRouter.get('/admin/contact-messages', requireAdmin, wrap(async (req, res) => {
-  const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 500);
-  const { rows } = await db.query(
-    'SELECT id, name, email, type, message, status, created_at FROM contact_messages ORDER BY created_at DESC LIMIT $1',
-    [limit],
-  );
-  res.json({ messages: rows });
-}));
-
-publicApiRouter.get('/admin/stats', requireAdmin, wrap(async (req, res) => {
-  const days = Math.min(Math.max(Number(req.query.days) || 30, 1), 365);
-  const since = `CURRENT_DATE - ($1::int - 1)`;
-  const [daily, pages, referrers] = await Promise.all([
-    db.query(`SELECT day, SUM(views)::int AS views FROM page_views WHERE day >= ${since} GROUP BY day ORDER BY day`, [days]),
-    db.query(`SELECT path, SUM(views)::int AS views FROM page_views WHERE day >= ${since} GROUP BY path ORDER BY views DESC LIMIT 50`, [days]),
-    db.query(`SELECT referrer, SUM(views)::int AS views FROM page_views WHERE day >= ${since} AND referrer <> '' GROUP BY referrer ORDER BY views DESC LIMIT 25`, [days]),
-  ]);
-  res.json({ days, daily: daily.rows, topPages: pages.rows, topReferrers: referrers.rows });
 }));
 
 publicApiRouter.use((err, _req, res, _next) => {
