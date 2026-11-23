@@ -5,6 +5,8 @@
  * - Provides /api for email/password accounts and saved plans, backed by
  *   Railway Postgres (DATABASE_URL). Without DATABASE_URL the site still
  *   serves, and the API reports accounts as unavailable.
+ * - Serves the AI assistant at POST /api/chat (OPENAI_API_KEY; see
+ *   server/chat-route.mjs). It does not need the database.
  */
 
 import express from 'express';
@@ -13,6 +15,7 @@ import { resolve, dirname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db, migrate } from './db.mjs';
 import { apiRouter } from './api.mjs';
+import { chatRoute } from './chat-route.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = resolve(__dirname, '..', 'dist');
@@ -31,13 +34,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Security headers (same policy the site used on Netlify, minus Supabase)
+// Security headers (same policy the site used on Netlify, minus Supabase).
+// The microphone is allowed for this site only: the assistant's voice input needs it.
 app.use((_req, res, next) => {
   res.set({
     'X-Frame-Options': 'DENY',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Permissions-Policy': 'camera=(), microphone=(self), geolocation=()',
     'Content-Security-Policy':
       "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
       "img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none';",
@@ -46,6 +50,9 @@ app.use((_req, res, next) => {
 });
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
+// Before apiRouter: that router needs the database and parses JSON bodies,
+// while the assistant reads its own body and works without a database.
+app.post('/api/chat', (req, res, next) => chatRoute(req, res).catch(next));
 app.use('/api', apiRouter);
 
 // Static files. Hashed assets are cached forever; HTML is always revalidated.

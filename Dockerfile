@@ -14,6 +14,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY server ./server
 COPY --from=build /app/dist ./dist
+# The AI assistant, bundled from server/chat/ by `npm run build`
+COPY --from=build /app/dist-node ./dist-node
 USER node
 EXPOSE 3000
 CMD ["node", "server/index.mjs"]
