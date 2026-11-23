@@ -79,27 +79,18 @@ export function Hero() {
             </div>
           </div>
 
-          <div className="relative hidden lg:flex items-center justify-center" aria-hidden="true">
-            <div className="relative w-72 h-72">
-              <div className="absolute inset-0 rounded-full border-[32px] border-blue-100 opacity-60" />
-              <div className="absolute inset-6 rounded-full border-[24px] border-teal-100 opacity-60" />
-              <div className="absolute inset-12 rounded-full border-[16px] border-blue-200 opacity-50" />
-              <div className="absolute inset-[72px] rounded-full bg-gradient-to-br from-blue-600 to-teal-500 opacity-90 shadow-2xl flex items-center justify-center">
-                <svg viewBox="0 0 60 60" className="w-16 h-16 text-white" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <circle cx="30" cy="30" r="12" />
-                  <circle cx="30" cy="30" r="4" fill="currentColor" stroke="none" />
-                  <path d="M5 30 Q17 14 30 14 Q43 14 55 30 Q43 46 30 46 Q17 46 5 30Z" />
-                </svg>
-              </div>
-            </div>
-            <div className="absolute top-4 right-4 bg-white rounded-xl shadow-lg px-4 py-3 border border-gray-100">
-              <p className="text-xs text-gray-400">Next step</p>
-              <p className="text-sm font-semibold text-gray-800">Low Vision Exam</p>
-            </div>
-            <div className="absolute bottom-8 left-4 bg-white rounded-xl shadow-lg px-4 py-3 border border-gray-100">
-              <p className="text-xs text-gray-400">Coverage available</p>
-              <p className="text-sm font-semibold text-teal-700">Medicare + State VR</p>
-            </div>
+          <div className="relative">
+            <img
+              src="/images/hero-patient-clinician-1200.webp"
+              srcSet="/images/hero-patient-clinician-800.webp 800w, /images/hero-patient-clinician-1200.webp 1200w, /images/hero-patient-clinician-1600.webp 1600w"
+              sizes="(min-width: 1280px) 592px, (min-width: 1024px) 46vw, calc(100vw - 2rem)"
+              width={1600}
+              height={900}
+              alt="An older woman smiles as she uses a handheld magnifier while a clinician points to something on a tablet beside her."
+              decoding="async"
+              {...{ fetchpriority: 'high' }}
+              className="w-full h-auto aspect-[16/9] object-cover rounded-2xl shadow-xl ring-1 ring-black/5"
+            />
           </div>
         </div>
       </div>
