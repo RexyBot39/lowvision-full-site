@@ -244,10 +244,11 @@ export function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20 md:h-24 xl:h-28">
             <Link to="/" className="flex items-center shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 rounded-md" aria-label="Low Vision Navigator Home">
-              <img src="/logo.png" alt="Low Vision Navigator" width={864} height={240} className="h-12 sm:h-14 md:h-16 lg:h-14 xl:h-16 w-auto" />
+              <img src="/logo.png" alt="Low Vision Navigator" width={864} height={240} className="h-12 sm:h-14 md:h-16 w-auto" />
             </Link>
 
-            <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-0.5">
+            {/* Full menu only from 1280px: below that the seven sections don't fit and the page scrolled sideways. */}
+            <nav aria-label="Main navigation" className="hidden xl:flex items-center gap-0.5">
               {navSections.map((section) => (
                 <div key={section.key} className="relative">
                   <button
@@ -344,7 +345,7 @@ export function Header() {
                 aria-label="Toggle mobile menu"
                 aria-expanded={mobileOpen}
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="lg:hidden h-9 w-9 flex items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
+                className="xl:hidden h-9 w-9 flex items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
               >
                 {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
@@ -353,7 +354,7 @@ export function Header() {
         </div>
 
         {openMenu && (
-          <div className="hidden lg:block absolute left-0 right-0 top-full bg-white border-b border-gray-200 shadow-xl z-50">
+          <div className="hidden xl:block absolute left-0 right-0 top-full bg-white border-b border-gray-200 shadow-xl z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               {navSections.filter((s) => s.key === openMenu).map((section) => (
                 <div key={section.key} className="grid grid-cols-3 gap-8">
@@ -385,7 +386,7 @@ export function Header() {
         )}
 
         {mobileOpen && (
-          <div className="lg:hidden border-t border-gray-200 bg-white max-h-[80vh] overflow-y-auto">
+          <div className="xl:hidden border-t border-gray-200 bg-white max-h-[80vh] overflow-y-auto">
             <nav aria-label="Mobile navigation">
               {navSections.map((section) => (
                 <details key={section.key} className="border-b border-gray-100">
