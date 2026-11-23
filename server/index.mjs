@@ -9,6 +9,7 @@
  *   no cookies or IPs stored) in the same database; see server/public-api.mjs.
  * - Optional PostHog analytics through a same-origin /ingest proxy, and an
  *   admin API (/api/admin) behind ADMIN_EMAILS / ADMIN_TOKEN for /admin.
+ * - SEO snapshots from DataForSEO for the admin SEO tab (server/seo.mjs).
  * - Serves the AI assistant at POST /api/chat (OPENAI_API_KEY; see
  *   server/chat-route.mjs). It does not need the database.
  */
@@ -22,6 +23,7 @@ import { apiRouter } from './api.mjs';
 import { publicApiRouter } from './public-api.mjs';
 import { adminRouter } from './admin-api.mjs';
 import { ingestProxy, collectionEnabled, reportingEnabled } from './posthog.mjs';
+import { startSeoScheduler } from './seo.mjs';
 import { chatRoute } from './chat-route.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -116,6 +118,7 @@ async function start() {
     `[analytics] collection: ${collectionEnabled() ? 'PostHog' : 'built-in counter'}; ` +
       `admin reports: ${reportingEnabled() ? 'PostHog' : 'built-in counter'}`,
   );
+  if (db) startSeoScheduler();
   app.listen(PORT, () => console.log(`[server] listening on :${PORT}`));
 }
 

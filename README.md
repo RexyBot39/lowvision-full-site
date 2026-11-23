@@ -26,6 +26,7 @@ Dashboard** link then appears in the account menu. It has two tabs:
 - **Analytics**: page views, visitors, top pages, referrers, devices,
   countries, and intake/assistant/contact events for the last 7, 30 or 90
   days, compared with the previous period.
+- **SEO**: Google rankings from DataForSEO (see below).
 - **Messages**: contact-form submissions, with reply links and
   new/handled status.
 
@@ -63,6 +64,33 @@ The startup log shows which mode is active, e.g.
 `[analytics] collection: PostHog; admin reports: PostHog`. Dashboard queries
 are cached for 5 minutes. If PostHog can't be reached, the dashboard falls back
 to the built-in counter and says so.
+
+## SEO data (DataForSEO)
+
+`server/seo.mjs` pulls data from DataForSEO. DataForSEO charges per request,
+so the dashboard never calls it directly: the server takes a **snapshot**,
+stores it in the `seo_snapshots` table, and the SEO tab reads the stored
+snapshots. Each snapshot includes:
+
+- **Ranked keywords** (`dataforseo_labs/google/ranked_keywords/live`): every
+  keyword the site ranks for, with Google position, search volume, estimated
+  visits and ranking page. These feed the keyword table, the position
+  breakdown, top pages, and new/improved/declined/lost keywords between
+  snapshots.
+- **Competitors** (`dataforseo_labs/google/competitors_domain/live`).
+- **Backlinks summary** (`backlinks/summary/live`). This needs DataForSEO's
+  separate Backlinks subscription; without it this part is skipped and the
+  rest of the snapshot is still saved.
+
+Snapshots are taken when an admin clicks **Fetch fresh data** (at most one
+every 10 minutes) and automatically every `SEO_AUTO_REFRESH_DAYS` days
+(default 7; `0` turns it off). A snapshot usually costs $0.05–$0.20, and the
+cost of each one is shown in the snapshot history. Each snapshot's raw
+DataForSEO responses can be downloaded as JSON from the dashboard.
+
+Setup: set `DATAFORSEO_LOGIN` and `DATAFORSEO_PASSWORD` (the API credentials
+from DataForSEO's API Access page) on the web service. The other `SEO_*`
+variables are optional (see `.env.example`).
 
 ## Contact form
 

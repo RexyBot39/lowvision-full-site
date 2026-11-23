@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { BarChart3, Mail, RefreshCw, ExternalLink, AlertTriangle, Info, CheckCircle, Inbox } from 'lucide-react';
+import { BarChart3, Mail, RefreshCw, ExternalLink, CheckCircle, Inbox, Search } from 'lucide-react';
+import { Card, Notice, StatTile } from '../components/admin/AdminUI';
+import { fmt, nf, niceTicks, useWidth } from '../components/admin/format';
+import { SeoPanel } from '../components/admin/SeoPanel';
 import { PageSEO } from '../components/seo/PageSEO';
 import { useAuth } from '../contexts/AuthContext';
 import { api, ApiError } from '../lib/api';
@@ -29,6 +32,7 @@ interface ContactMessage {
   status: 'new' | 'handled'; created_at: string;
 }
 
+type Tab = 'analytics' | 'seo' | 'messages';
 const RANGES = [7, 30, 90] as const;
 const TYPE_LABELS: Record<string, string> = {
   'incorrect-listing': 'Incorrect listing',
@@ -38,8 +42,6 @@ const TYPE_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
-const nf = new Intl.NumberFormat('en-US');
-const fmt = (n: number | null | undefined) => (n == null ? '—' : nf.format(n));
 const fmtDay = (iso: string, opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', opts);
 
@@ -48,10 +50,11 @@ const fmtDay = (iso: string, opts: Intl.DateTimeFormatOptions = { month: 'short'
 export function AdminPage() {
   const { user, loading } = useAuth();
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') === 'messages' ? 'messages' : 'analytics';
+  const tabParam = params.get('tab');
+  const tab: Tab = tabParam === 'messages' || tabParam === 'seo' ? tabParam : 'analytics';
   const [newCount, setNewCount] = useState<number | null>(null);
 
-  const setTab = (t: 'analytics' | 'messages') => {
+  const setTab = (t: Tab) => {
     const next = new URLSearchParams(params);
     if (t === 'analytics') next.delete('tab'); else next.set('tab', t);
     setParams(next, { replace: true });
@@ -84,6 +87,9 @@ export function AdminPage() {
               <TabButton id="analytics" active={tab === 'analytics'} onSelect={() => setTab('analytics')}>
                 <BarChart3 className="h-4 w-4" aria-hidden="true" /> Analytics
               </TabButton>
+              <TabButton id="seo" active={tab === 'seo'} onSelect={() => setTab('seo')}>
+                <Search className="h-4 w-4" aria-hidden="true" /> SEO
+              </TabButton>
               <TabButton id="messages" active={tab === 'messages'} onSelect={() => setTab('messages')}>
                 <Mail className="h-4 w-4" aria-hidden="true" /> Messages
                 {newCount ? (
@@ -94,9 +100,11 @@ export function AdminPage() {
               </TabButton>
             </div>
             <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-              {tab === 'analytics' ? <AnalyticsPanel /> : <MessagesPanel onCounts={setNewCount} />}
+              {tab === 'analytics' && <AnalyticsPanel />}
+              {tab === 'seo' && <SeoPanel />}
+              {tab === 'messages' && <MessagesPanel onCounts={setNewCount} />}
             </div>
-            {tab === 'analytics' && <MessageCountLoader onCounts={setNewCount} />}
+            {tab !== 'messages' && <MessageCountLoader onCounts={setNewCount} />}
           </>
         )}
       </div>
@@ -121,21 +129,6 @@ function TabButton({ id, active, onSelect, children }: { id: string; active: boo
   );
 }
 
-function Notice({ icon, title, children }: { icon: 'info' | 'warning'; title: string; children: React.ReactNode }) {
-  const warn = icon === 'warning';
-  const Icon = warn ? AlertTriangle : Info;
-  return (
-    <div className={`flex gap-3 rounded-xl border p-4 ${warn ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
-      <Icon className={`h-5 w-5 shrink-0 mt-0.5 ${warn ? 'text-amber-700' : 'text-blue-700'}`} aria-hidden="true" />
-      <div className={`text-sm ${warn ? 'text-amber-900' : 'text-blue-900'}`}>
-        <p className="font-semibold mb-0.5">{title}</p>
-        <div>{children}</div>
-      </div>
-    </div>
-  );
-}
-
-/** Fetches just the unread count so the Messages tab badge shows while on Analytics. */
 function MessageCountLoader({ onCounts }: { onCounts: (n: number | null) => void }) {
   useEffect(() => {
     api<{ counts: { new: number } }>('/admin/contact-messages?limit=1')
@@ -268,46 +261,6 @@ function SetupNotice({ collecting }: { collecting: 'posthog' | 'builtin' }) {
   );
 }
 
-function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
-  return (
-    <section className="bg-white rounded-xl border border-gray-200 p-5">
-      <div className="flex items-baseline justify-between gap-3 mb-4">
-        <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-        {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function StatTile({ label, value, previous, days, note }: {
-  label: string; value: number | null; previous?: number | null; days?: number; note?: string;
-}) {
-  let change: React.ReactNode = null;
-  if (value != null && previous != null && days) {
-    if (previous === 0) {
-      change = value > 0 ? <span>New this period</span> : null;
-    } else {
-      const pct = Math.round(((value - previous) / previous) * 100);
-      const dir = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
-      change = (
-        <span>
-          <span aria-hidden="true">{dir === 'up' ? '▲' : dir === 'down' ? '▼' : '■'}</span>{' '}
-          {dir === 'flat' ? 'No change' : `${Math.abs(pct)}% ${dir}`} vs previous {days} days
-        </span>
-      );
-    }
-  }
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <p className="text-sm text-gray-600">{label}</p>
-      <p className="text-3xl font-bold text-gray-900 mt-1 tabular-nums">{fmt(value)}</p>
-      {(change || note) && <p className="text-xs text-gray-500 mt-1.5">{change ?? note}</p>}
-    </div>
-  );
-}
-
-/** Ranked table with a thin inline bar for each row's share of the top value. */
 function RankedList({ title, rows, keyLabel, empty, link }: {
   title: string; rows: Row[]; keyLabel: string; empty: string; link?: boolean;
 }) {
@@ -390,31 +343,6 @@ function fillDays(rows: DayRow[], days: number, withVisitors: boolean): DayRow[]
     out.push(byDay.get(iso) ?? { day: iso, views: 0, visitors: withVisitors ? 0 : null });
   }
   return out;
-}
-
-function niceTicks(max: number): number[] {
-  if (max <= 0) return [0];
-  const rough = max / 4;
-  const pow = 10 ** Math.floor(Math.log10(rough));
-  const step = [1, 2, 5, 10].map((m) => m * pow).find((s) => s >= rough) ?? 10 * pow;
-  const ticks = [];
-  for (let v = 0; v <= max + step * 0.001; v += step) ticks.push(v);
-  if (ticks[ticks.length - 1] < max) ticks.push(ticks[ticks.length - 1] + step);
-  return ticks;
-}
-
-function useWidth<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const [width, setWidth] = useState(0);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    setWidth(el.clientWidth);
-    const ro = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  return [ref, width] as const;
 }
 
 function DailyChart({ rows }: { rows: DayRow[] }) {

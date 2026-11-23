@@ -52,6 +52,21 @@ export async function migrate() {
       views    INTEGER NOT NULL DEFAULT 0,
       PRIMARY KEY (day, path, referrer)
     );
+    -- SEO snapshots from DataForSEO (server/seo.mjs). raw keeps the API responses.
+    CREATE TABLE IF NOT EXISTS seo_snapshots (
+      id            SERIAL PRIMARY KEY,
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+      target        TEXT NOT NULL,
+      location_code INTEGER NOT NULL,
+      language_code TEXT NOT NULL,
+      trigger       TEXT NOT NULL,
+      cost          NUMERIC(12, 6) NOT NULL DEFAULT 0,
+      summary       JSONB NOT NULL,
+      data          JSONB NOT NULL,
+      raw           JSONB NOT NULL,
+      errors        JSONB NOT NULL DEFAULT '{}'
+    );
+    CREATE INDEX IF NOT EXISTS seo_snapshots_target_created_idx ON seo_snapshots(target, created_at DESC);
   `);
   await db.query('DELETE FROM sessions WHERE expires_at < now()');
 }

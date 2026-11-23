@@ -7,6 +7,9 @@
  *   GET   /api/admin/analytics?days=30       PostHog data, or the built-in counter
  *   GET   /api/admin/contact-messages?status=new|handled|all&limit=100
  *   PATCH /api/admin/contact-messages/:id    { status: "new" | "handled" }
+ *   GET   /api/admin/seo                     latest DataForSEO snapshot + history
+ *   POST  /api/admin/seo/refresh             fetch a new snapshot (costs money; 10-min cooldown)
+ *   GET   /api/admin/seo/snapshots/:id/raw   download a snapshot's raw DataForSEO responses
  */
 
 import express from 'express';
@@ -14,6 +17,9 @@ import { timingSafeEqual, createHash } from 'node:crypto';
 import { db } from './db.mjs';
 import { loadUser, isAdminEmail } from './api.mjs';
 import { posthog, posthogOverview, reportingEnabled, collectionEnabled, TRACKED_EVENTS } from './posthog.mjs';
+import {
+  seoConfig, seoEnabled, refreshSeo, seoRefreshRunning, compareKeywords, pagesFromKeywords, MANUAL_COOLDOWN_MS,
+} from './seo.mjs';
 
 export const adminRouter = express.Router();
 
@@ -130,6 +136,118 @@ adminRouter.patch('/contact-messages/:id', wrap(async (req, res) => {
   const { rowCount } = await db.query('UPDATE contact_messages SET status = $1 WHERE id = $2', [status, id]);
   if (!rowCount) return res.status(404).json({ error: 'Not found' });
   res.json({ ok: true });
+}));
+
+
+// ── SEO (DataForSEO snapshots) ─────────────────────────────────────────────
+
+function seoMeta() {
+  return {
+    configured: seoEnabled(),
+    target: seoConfig.target,
+    locationCode: seoConfig.locationCode,
+    languageCode: seoConfig.languageCode,
+    keywordLimit: seoConfig.keywordLimit,
+    autoRefreshDays: seoConfig.autoRefreshDays,
+    refreshing: seoRefreshRunning(),
+  };
+}
+
+adminRouter.get('/seo', wrap(async (_req, res) => {
+  const meta = seoMeta();
+  if (!db) return res.json({ ...meta, latest: null, history: [] });
+  const [latestQ, historyQ] = await Promise.all([
+    db.query(
+      `SELECT id, created_at, trigger, cost, summary, data, errors FROM seo_snapshots
+       WHERE target = $1 ORDER BY created_at DESC LIMIT 2`,
+      [seoConfig.target],
+    ),
+    db.query(
+      `SELECT id, created_at, trigger, cost, summary->'keywords' AS keywords, summary->'etv' AS etv,
+              summary->'top3' AS top3, summary->'top10' AS top10, summary->'backlinks'->'referringDomains' AS referring_domains,
+              summary->'keywordsAvailable' AS keywords_available, errors
+       FROM seo_snapshots WHERE target = $1 ORDER BY created_at DESC LIMIT 52`,
+      [seoConfig.target],
+    ),
+  ]);
+  const [cur, prev] = latestQ.rows;
+  let latest = null;
+  if (cur) {
+    // Only compare keyword lists when both snapshots actually fetched keywords.
+    const prevKeywords = prev?.summary?.keywordsAvailable ? prev.data.keywords : null;
+    const { keywords, lost } = compareKeywords(cur.data.keywords ?? [], prevKeywords);
+    latest = {
+      id: cur.id,
+      createdAt: cur.created_at,
+      trigger: cur.trigger,
+      cost: Number(cur.cost),
+      summary: cur.summary,
+      previous: prev ? { id: prev.id, createdAt: prev.created_at, summary: prev.summary } : null,
+      keywords,
+      lost,
+      pages: pagesFromKeywords(keywords),
+      competitors: cur.data.competitors ?? [],
+      errors: cur.errors ?? {},
+    };
+  }
+  const nextAuto =
+    meta.configured && meta.autoRefreshDays && cur
+      ? new Date(new Date(cur.created_at).getTime() + meta.autoRefreshDays * 86_400_000).toISOString()
+      : null;
+  res.json({
+    ...meta,
+    nextAutoRefresh: nextAuto,
+    latest,
+    history: historyQ.rows.map((r) => ({
+      id: r.id,
+      createdAt: r.created_at,
+      trigger: r.trigger,
+      cost: Number(r.cost),
+      keywords: r.keywords_available === false ? null : r.keywords,
+      etv: r.keywords_available === false ? null : r.etv,
+      top3: r.keywords_available === false ? null : r.top3,
+      top10: r.keywords_available === false ? null : r.top10,
+      referringDomains: r.referring_domains,
+      failed: Object.keys(r.errors ?? {}),
+    })),
+  });
+}));
+
+adminRouter.post('/seo/refresh', wrap(async (_req, res) => {
+  if (!seoEnabled()) {
+    return res.status(400).json({ error: 'DataForSEO is not configured. Set DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD.' });
+  }
+  if (seoRefreshRunning()) return res.status(409).json({ error: 'A refresh is already running. Please wait.' });
+  const { rows } = await db.query(
+    `SELECT created_at FROM seo_snapshots WHERE target = $1 AND trigger = 'manual' ORDER BY created_at DESC LIMIT 1`,
+    [seoConfig.target],
+  );
+  const last = rows[0] ? new Date(rows[0].created_at).getTime() : 0;
+  const wait = last + MANUAL_COOLDOWN_MS - Date.now();
+  if (wait > 0) {
+    return res.status(429).json({ error: `Fresh data was fetched recently. Try again in ${Math.ceil(wait / 60000)} minute(s).` });
+  }
+  try {
+    const id = await refreshSeo('manual');
+    res.status(201).json({ id });
+  } catch (err) {
+    console.error('[seo] manual refresh failed', err);
+    res.status(502).json({ error: `DataForSEO: ${err.message}` });
+  }
+}));
+
+adminRouter.get('/seo/snapshots/:id/raw', wrap(async (req, res) => {
+  if (!db) return res.status(503).json({ error: 'Database not configured' });
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' });
+  const { rows } = await db.query(
+    `SELECT id, created_at, target, location_code, language_code, trigger, cost, errors, raw FROM seo_snapshots WHERE id = $1`,
+    [id],
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+  const day = new Date(rows[0].created_at).toISOString().slice(0, 10);
+  res.set('Content-Disposition', `attachment; filename="dataforseo-${rows[0].target}-${day}-${id}.json"`);
+  res.type('application/json').send(JSON.stringify(rows[0], null, 2));
 }));
 
 adminRouter.use((_req, res) => res.status(404).json({ error: 'Not found' }));
