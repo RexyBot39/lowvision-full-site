@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -10,7 +14,14 @@
     "noEmit": true,
     "strict": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["server/**/*.ts", "functions/**/*.ts", "netlify/functions/**/*.mts"]
+  "include": [
+    "server/**/*.ts",
+    "functions/**/*.ts",
+    "netlify/functions/**/*.mts",
+    "worker/**/*.ts"
+  ]
 }
