@@ -6,6 +6,7 @@ import { Footer } from './Footer';
 import { AccessibilityBar } from './AccessibilityBar';
 import { ChatLauncher } from '../chat/ChatLauncher';
 import { openChat } from '../chat/openChat';
+import { trackPageview } from '../../lib/analytics';
 
 interface LayoutProps {
   children: ReactNode;
@@ -19,10 +20,19 @@ function ScrollToTop() {
   return null;
 }
 
+function PageviewTracker() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    trackPageview(pathname);
+  }, [pathname]);
+  return null;
+}
+
 export function Layout({ children }: LayoutProps) {
   return (
     <div className="flex flex-col min-h-screen">
       <ScrollToTop />
+      <PageviewTracker />
       {/* Skip link must be the very first focusable element */}
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <a

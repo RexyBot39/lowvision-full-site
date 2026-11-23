@@ -33,6 +33,25 @@ export async function migrate() {
       data       JSONB NOT NULL,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    CREATE TABLE IF NOT EXISTS contact_messages (
+      id         SERIAL PRIMARY KEY,
+      name       TEXT NOT NULL,
+      email      TEXT NOT NULL,
+      type       TEXT NOT NULL,
+      message    TEXT NOT NULL,
+      status     TEXT NOT NULL DEFAULT 'new',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS contact_messages_created_at_idx ON contact_messages(created_at DESC);
+    -- Privacy-friendly analytics: daily counters only. No cookies, IP addresses,
+    -- user agents, or per-visit rows are ever stored.
+    CREATE TABLE IF NOT EXISTS page_views (
+      day      DATE NOT NULL,
+      path     TEXT NOT NULL,
+      referrer TEXT NOT NULL DEFAULT '',
+      views    INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (day, path, referrer)
+    );
   `);
   await db.query('DELETE FROM sessions WHERE expires_at < now()');
 }

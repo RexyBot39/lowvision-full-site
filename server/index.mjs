@@ -5,6 +5,8 @@
  * - Provides /api for email/password accounts and saved plans, backed by
  *   Railway Postgres (DATABASE_URL). Without DATABASE_URL the site still
  *   serves, and the API reports accounts as unavailable.
+ * - Saves contact-form messages and counts page views (privacy-friendly,
+ *   no cookies or IPs stored) in the same database; see server/public-api.mjs.
  * - Serves the AI assistant at POST /api/chat (OPENAI_API_KEY; see
  *   server/chat-route.mjs). It does not need the database.
  */
@@ -15,6 +17,7 @@ import { resolve, dirname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db, migrate } from './db.mjs';
 import { apiRouter } from './api.mjs';
+import { publicApiRouter } from './public-api.mjs';
 import { chatRoute } from './chat-route.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -53,6 +56,9 @@ app.get('/healthz', (_req, res) => res.json({ ok: true }));
 // Before apiRouter: that router needs the database and parses JSON bodies,
 // while the assistant reads its own body and works without a database.
 app.post('/api/chat', (req, res, next) => chatRoute(req, res).catch(next));
+// Contact form, analytics counter and admin reads. Before apiRouter, whose
+// "accounts unavailable" guard would otherwise answer these.
+app.use('/api', publicApiRouter);
 app.use('/api', apiRouter);
 
 // Static files. Hashed assets are cached forever; HTML is always revalidated.

@@ -635,43 +635,82 @@ function TemplateCard({ template }: { template: typeof TEMPLATES[number] }) {
 }
 
 export function CodingCoverageGuidePage() {
-  const cptCodes = [
-    { code: '92002', desc: 'Ophthalmological services, new patient, intermediate', notes: 'Medicare Part B — requires medical decision-making documentation' },
-    { code: '92004', desc: 'Ophthalmological services, new patient, comprehensive', notes: 'Medicare Part B — includes refraction; note: refraction not separately billable to Medicare' },
-    { code: '92012', desc: 'Ophthalmological services, established patient, intermediate', notes: 'Most common code for follow-up low vision visits' },
-    { code: '92014', desc: 'Ophthalmological services, established patient, comprehensive', notes: 'Use for full re-evaluation visits' },
-    { code: '97535', desc: 'Self-care/home management training, per 15 min', notes: 'ADL training — OT or VRT; requires functional limitation documentation' },
-    { code: '97110', desc: 'Therapeutic exercises, per 15 min', notes: 'Sometimes used for visual skills training (eccentric viewing) — payer-dependent' },
-    { code: '97001', desc: 'Occupational therapy evaluation', notes: 'For initial OT assessment related to vision-based ADL deficits' },
-    { code: '97003', desc: 'OT re-evaluation', notes: 'Used after initial OT evaluation to reassess functional status' },
-    { code: 'G0117', desc: 'Glaucoma screening, high-risk patient, optometrist', notes: 'Medicare-specific HCPCS code; annual for qualifying high-risk patients' },
+  const LAST_REVIEWED = 'November 2026';
+
+  const cptGroups: { group: string; rows: { code: string; desc: string; notes: string }[] }[] = [
+    {
+      group: 'Eye exams and office visits',
+      rows: [
+        { code: '92002', desc: 'Ophthalmological services, new patient, intermediate', notes: 'Medicare Part B covered when medically necessary. Refraction (92015) is not included and is billed separately.' },
+        { code: '92004', desc: 'Ophthalmological services, new patient, comprehensive', notes: 'Typical code for an initial low vision evaluation. Refraction is not included—bill 92015 separately.' },
+        { code: '92012', desc: 'Ophthalmological services, established patient, intermediate', notes: 'Common for low vision follow-up and device-training visits.' },
+        { code: '92014', desc: 'Ophthalmological services, established patient, comprehensive', notes: 'Full re-evaluation visits.' },
+        { code: '99202–99215', desc: 'Office/outpatient E/M visit, new (99202–99205) or established (99212–99215)', notes: 'Alternative to the 92xxx codes. Level is chosen by medical decision-making or total time on the date of service.' },
+        { code: '92015', desc: 'Determination of refractive state', notes: 'Statutorily excluded from Medicare. Patient is responsible; append GY if a Medicare denial is needed for secondary insurance.' },
+      ],
+    },
+    {
+      group: 'Occupational therapy and vision rehabilitation',
+      rows: [
+        { code: '97165', desc: 'OT evaluation, low complexity', notes: 'Replaced 97003 in 2017. Complexity depends on occupational profile, performance deficits, and clinical decision-making.' },
+        { code: '97166', desc: 'OT evaluation, moderate complexity', notes: 'Most vision-related ADL evaluations fall here or in 97167.' },
+        { code: '97167', desc: 'OT evaluation, high complexity', notes: 'Multiple performance deficits and comorbidities affecting the plan of care.' },
+        { code: '97168', desc: 'OT re-evaluation', notes: 'Replaced 97004 in 2017. Use when there is a significant change in status, not routinely.' },
+        { code: '97535', desc: 'Self-care/home management training, each 15 min', notes: 'ADL training: medication management, cooking, labeling, device use at home. Timed code—document minutes.' },
+        { code: '97530', desc: 'Therapeutic activities, each 15 min', notes: 'Dynamic functional activities such as scanning during reaching or navigating tasks. Timed code.' },
+        { code: '97112', desc: 'Neuromuscular re-education, each 15 min', notes: 'Some payers accept it for eccentric viewing and scanning training; payer-dependent.' },
+        { code: '97110', desc: 'Therapeutic exercise, each 15 min', notes: 'Occasionally used for visual skills training; payer-dependent and frequently questioned on review.' },
+      ],
+    },
+    {
+      group: 'Low vision aids (HCPCS)',
+      rows: [
+        { code: 'V2600', desc: 'Hand-held low vision aids and other non-spectacle-mounted aids', notes: 'Not covered by Medicare. May be covered by VA, some Medicaid programs, or state VR / blind agencies.' },
+        { code: 'V2610', desc: 'Single-lens spectacle-mounted low vision aids', notes: 'Not covered by Medicare. Append GY on Medicare claims.' },
+        { code: 'V2615', desc: 'Telescopic and other compound lens systems (distance/near telescopes, compound microscopic lenses)', notes: 'Not covered by Medicare. Includes bioptic telescopes.' },
+      ],
+    },
+  ];
+
+  const modifiers = [
+    { code: 'GO', desc: 'Services delivered under an outpatient occupational therapy plan of care', notes: 'Required on every OT line item billed to Medicare.' },
+    { code: 'CO', desc: 'Outpatient OT services furnished in whole or in part by an OT assistant', notes: 'Medicare pays these services at a reduced rate.' },
+    { code: 'KX', desc: 'Requirements specified in the medical policy have been met', notes: 'Append once the patient\'s combined PT/SLP or OT spending passes the annual Medicare therapy threshold, and only with documented medical necessity.' },
+    { code: 'GA', desc: 'Waiver of liability statement (ABN) issued as required by payer policy', notes: 'Use when you expect Medicare to deny a usually covered service as not medically necessary and the patient signed an ABN.' },
+    { code: 'GZ', desc: 'Item or service expected to be denied as not reasonable and necessary', notes: 'Same situation as GA, but no ABN on file—the patient cannot be billed.' },
+    { code: 'GY', desc: 'Item or service statutorily excluded or does not meet the definition of any Medicare benefit', notes: 'Refraction, low vision aids (V2600–V2615). No ABN required.' },
   ];
 
   const icdCodes = [
-    { code: 'H54.0', desc: 'Blindness, both eyes' },
-    { code: 'H54.1', desc: 'Blindness, one eye, low vision other eye' },
-    { code: 'H54.2', desc: 'Low vision, both eyes' },
-    { code: 'H54.50', desc: 'Unqualified visual loss, one eye' },
-    { code: 'H54.7', desc: 'Unspecified visual loss' },
-    { code: 'H35.30', desc: 'Unspecified macular degeneration' },
-    { code: 'H35.31', desc: 'Nonexudative age-related macular degeneration' },
-    { code: 'H35.32', desc: 'Exudative age-related macular degeneration' },
-    { code: 'H40.10', desc: 'Open-angle glaucoma (unspecified)' },
-    { code: 'H35.00', desc: 'Unspecified background retinopathy' },
-    { code: 'H50.9', desc: 'Unspecified amblyopia' },
-    { code: 'H47.10', desc: 'Optic atrophy, unspecified' },
+    { code: 'H54.0X-', desc: 'Blindness, both eyes', notes: 'Add the visual impairment category for each eye (3–5), e.g. H54.0X33.' },
+    { code: 'H54.1-', desc: 'Blindness, one eye; low vision, other eye', notes: 'Add which eye is blind and the category of each eye.' },
+    { code: 'H54.2X-', desc: 'Low vision, both eyes', notes: 'Add category 1 or 2 for each eye, e.g. H54.2X11.' },
+    { code: 'H54.5-', desc: 'Low vision, one eye; normal vision, other eye', notes: 'Add eye and category.' },
+    { code: 'H54.6-', desc: 'Unqualified visual loss, one eye', notes: 'H54.61 right eye, H54.62 left eye.' },
+    { code: 'H54.7', desc: 'Unspecified visual loss', notes: 'Billable as is; use a more specific H54 code when acuity/fields are measured.' },
+    { code: 'H54.8', desc: 'Legal blindness, as defined in USA', notes: 'Billable as is.' },
+    { code: 'H35.31-', desc: 'Nonexudative (dry) age-related macular degeneration', notes: 'Add eye and stage (early, intermediate, advanced atrophic with or without subfoveal involvement), e.g. H35.3132.' },
+    { code: 'H35.32-', desc: 'Exudative (wet) age-related macular degeneration', notes: 'Add eye and stage (active CNV, inactive CNV, inactive scar), e.g. H35.3211.' },
+    { code: 'H40.11-', desc: 'Primary open-angle glaucoma', notes: 'Add eye and stage (mild, moderate, severe, indeterminate), e.g. H40.1132.' },
+    { code: 'E11.3-', desc: 'Type 2 diabetes with ophthalmic complications (diabetic retinopathy)', notes: 'Retinopathy is coded within the diabetes code, with severity, macular edema, and eye. Use E10.3- for type 1.' },
+    { code: 'H35.5-', desc: 'Hereditary retinal dystrophy', notes: 'H35.52 pigmentary retinal dystrophy (retinitis pigmentosa); H35.50 unspecified.' },
+    { code: 'H47.2-', desc: 'Optic atrophy', notes: 'H47.20 unspecified; more specific codes for primary, glaucomatous, and other types.' },
+    { code: 'H53.4-', desc: 'Visual field defects', notes: 'Includes H53.46- homonymous bilateral field defects (e.g. after stroke).' },
+    { code: 'H53.00-', desc: 'Amblyopia, unspecified', notes: 'Add eye: H53.001 right, H53.002 left, H53.003 bilateral.' },
   ];
+
+  const cptCodes = cptGroups.flatMap((g) => g.rows);
 
   const codingSchema = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'CPT Codes for Low Vision and Rehabilitation Billing',
-    description: 'CPT and ICD-10 billing codes for low vision examinations, occupational therapy, and vision rehabilitation services, with Medicare documentation requirements.',
+    name: 'CPT and HCPCS Codes for Low Vision and Rehabilitation Billing',
+    description: 'CPT, HCPCS, and ICD-10-CM codes for low vision examinations, occupational therapy, and vision rehabilitation services, with Medicare modifiers and documentation requirements.',
     numberOfItems: cptCodes.length,
     itemListElement: cptCodes.map((c, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      name: `CPT ${c.code}: ${c.desc}`,
+      name: `${c.code}: ${c.desc}`,
       description: c.notes,
     })),
   };
@@ -679,32 +718,74 @@ export function CodingCoverageGuidePage() {
   return (
     <ContentPageLayout
       title="Billing, Coding & Coverage Guide"
-      subtitle="CPT and ICD-10 codes for low vision and rehabilitation services, with Medicare documentation requirements and common denial patterns."
+      subtitle="CPT, HCPCS, and ICD-10-CM codes for low vision and rehabilitation services, with Medicare modifiers, documentation requirements, and common denial patterns."
       breadcrumbs={[{ label: 'For Professionals', href: '/professionals' }, { label: 'Coding & Coverage' }]}
-      description="Billing and coding reference for low vision exams and rehabilitation: CPT codes, ICD-10 codes, Medicare documentation requirements, LMN templates, and common denial reasons."
+      description="Billing and coding reference for low vision exams and rehabilitation: current CPT and HCPCS codes, ICD-10-CM codes, Medicare modifiers, documentation requirements, and common denial reasons."
       schema={codingSchema}
     >
       <div className="space-y-10">
         <div className="mb-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
-          <p className="text-sm text-amber-800">Coding rules change frequently. Verify current codes and payer policies before billing. This guide is for educational reference and does not constitute billing advice.</p>
+          <p className="text-sm text-amber-800">
+            <strong>Last reviewed {LAST_REVIEWED}.</strong> CPT codes change every January 1 and ICD-10-CM codes every October 1, and payer policies vary. Verify current codes and your local Medicare contractor's policies before billing. This guide is educational reference, not billing advice.
+          </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Commonly used CPT codes</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Procedure codes (CPT &amp; HCPCS)</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
+              <caption className="sr-only">CPT and HCPCS procedure codes for low vision and rehabilitation services</caption>
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left px-3 py-2.5 font-semibold text-gray-700 w-20">CPT Code</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-gray-700">Description</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-gray-700 hidden sm:table-cell">Notes</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-semibold text-gray-700 w-28">Code</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-semibold text-gray-700">Description</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-semibold text-gray-700 hidden sm:table-cell">Notes</th>
+                </tr>
+              </thead>
+              {cptGroups.map(({ group, rows }) => (
+                <tbody key={group}>
+                  <tr className="bg-blue-50 border-b border-blue-100">
+                    <th scope="colgroup" colSpan={3} className="text-left px-3 py-2 font-semibold text-blue-900">{group}</th>
+                  </tr>
+                  {rows.map((row, i) => (
+                    <tr key={row.code} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                      <th scope="row" className="text-left px-3 py-2.5 font-mono text-blue-700 font-semibold whitespace-nowrap">{row.code}</th>
+                      <td className="px-3 py-2.5 text-gray-800">
+                        {row.desc}
+                        <span className="block sm:hidden mt-1 text-gray-500">{row.notes}</span>
+                      </td>
+                      <td className="px-3 py-2.5 text-gray-500 hidden sm:table-cell">{row.notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              ))}
+            </table>
+          </div>
+          <p className="mt-3 text-sm text-gray-600">
+            The old PT and OT evaluation codes 97001–97004 were deleted in 2017; claims using them are rejected. Medicare does not enroll certified vision rehabilitation therapists (CVRTs) or orientation &amp; mobility specialists as independent billing providers—their services are usually funded through state blind or VR agencies, or billed incident-to a physician under that physician's direct supervision.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Medicare modifiers you'll use</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <caption className="sr-only">Medicare claim modifiers for low vision and OT services</caption>
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th scope="col" className="text-left px-3 py-2.5 font-semibold text-gray-700 w-20">Modifier</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-semibold text-gray-700">Meaning</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-semibold text-gray-700 hidden sm:table-cell">When to use it</th>
                 </tr>
               </thead>
               <tbody>
-                {cptCodes.map((row, i) => (
+                {modifiers.map((row, i) => (
                   <tr key={row.code} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                    <td className="px-3 py-2.5 font-mono text-blue-700 font-semibold">{row.code}</td>
-                    <td className="px-3 py-2.5 text-gray-800">{row.desc}</td>
+                    <th scope="row" className="text-left px-3 py-2.5 font-mono text-blue-700 font-semibold">{row.code}</th>
+                    <td className="px-3 py-2.5 text-gray-800">
+                      {row.desc}
+                      <span className="block sm:hidden mt-1 text-gray-500">{row.notes}</span>
+                    </td>
                     <td className="px-3 py-2.5 text-gray-500 hidden sm:table-cell">{row.notes}</td>
                   </tr>
                 ))}
@@ -714,20 +795,29 @@ export function CodingCoverageGuidePage() {
         </div>
 
         <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">ICD-10 codes for low vision</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">ICD-10-CM diagnosis codes for low vision</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            A trailing dash (–) means the code needs more characters—usually the eye, the stage, or the visual impairment category—before it can be billed. Code the underlying condition (for example AMD or glaucoma) first, then the H54 visual impairment code. Categories 1–2 are low vision and 3–5 are blindness, based on best-corrected acuity or visual field.
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
+              <caption className="sr-only">ICD-10-CM codes for visual impairment and common causes of low vision</caption>
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left px-3 py-2.5 font-semibold text-gray-700 w-24">ICD-10</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-gray-700">Description</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-semibold text-gray-700 w-24">ICD-10-CM</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-semibold text-gray-700">Description</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-semibold text-gray-700 hidden sm:table-cell">Coding notes</th>
                 </tr>
               </thead>
               <tbody>
                 {icdCodes.map((row, i) => (
                   <tr key={row.code} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                    <td className="px-3 py-2.5 font-mono text-blue-700 font-semibold">{row.code}</td>
-                    <td className="px-3 py-2.5 text-gray-800">{row.desc}</td>
+                    <th scope="row" className="text-left px-3 py-2.5 font-mono text-blue-700 font-semibold whitespace-nowrap">{row.code}</th>
+                    <td className="px-3 py-2.5 text-gray-800">
+                      {row.desc}
+                      <span className="block sm:hidden mt-1 text-gray-500">{row.notes}</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-gray-500 hidden sm:table-cell">{row.notes}</td>
                   </tr>
                 ))}
               </tbody>
@@ -739,11 +829,13 @@ export function CodingCoverageGuidePage() {
           <h2 className="text-xl font-bold text-gray-900 mb-4">Common Medicare denial reasons</h2>
           <div className="space-y-3">
             {[
-              { reason: 'Refraction billed to Medicare Part B', fix: 'Refraction is a statutory non-covered service under Medicare. Bill separately to patient or supplemental plan, or have patient sign ABN.' },
-              { reason: 'Optical low vision devices billed to Medicare', fix: 'Medicare does not cover optical aids (magnifiers, telescopes, bioptics). Document and inform patient upfront; refer to VR or state blind agency for funding.' },
-              { reason: 'Lack of medical necessity documentation', fix: 'Include functional impact on daily activities. Document specific tasks affected (reading medication labels, driving, cooking) and link to diagnosis with ICD-10 code.' },
-              { reason: 'Exceeding therapy cap without exception', fix: 'Use KX modifier to bypass cap when services are medically necessary and documented. Annual therapy cap applies unless exceptions apply.' },
-              { reason: '"Not a covered benefit" for assistive technology', fix: 'Most electronic low vision aids are not covered by Medicare. Refer to VA (for veterans), state VR, or Medicaid Waiver programs for alternative funding.' },
+              { reason: 'Refraction billed to Medicare Part B', fix: 'Refraction (92015) is statutorily excluded. Collect from the patient or a supplemental vision plan. An ABN is not required for excluded services, but a written notice of the cost is good practice; append GY if the patient needs a Medicare denial for secondary insurance.' },
+              { reason: 'Low vision aids billed to Medicare', fix: 'Magnifiers, spectacle-mounted aids, and telescopes (V2600–V2615) fall under Medicare\'s eyeglass exclusion. Tell the patient up front and refer to VA, state VR, or the state blind agency for funding.' },
+              { reason: 'Lack of medical necessity documentation', fix: 'Document measured acuity, fields, and contrast; the specific tasks affected (reading medication labels, cooking, managing finances); the goal of each service; and link everything to a fully specified ICD-10-CM code.' },
+              { reason: 'OT services without a certified plan of care or GO modifier', fix: 'Outpatient OT needs a plan of care certified by a physician or NPP (within 30 days of the first treatment, and recertified at least every 90 days), and every line needs the GO modifier.' },
+              { reason: 'Therapy threshold exceeded without KX', fix: 'The old hard therapy cap was repealed in 2018 and replaced by an annual threshold. Above it, append KX with documentation supporting continued need. Above $3,000 in a year, claims may be selected for targeted medical review.' },
+              { reason: 'Deleted or incomplete codes', fix: 'Claims with 97001–97004 or with non-billable ICD-10 categories (for example H54.2 or H35.31 without the extra characters) are rejected. Code to the highest specificity.' },
+              { reason: '"Not a covered benefit" for electronic aids', fix: 'Video magnifiers and other electronic low vision aids are not covered by Medicare. Refer to VA (for veterans), state VR, Medicaid waiver programs, or the state assistive technology program.' },
             ].map(({ reason, fix }) => (
               <div key={reason} className="bg-white rounded-xl border border-gray-200 p-5">
                 <p className="text-sm font-semibold text-red-700 mb-1.5">Denial reason: {reason}</p>

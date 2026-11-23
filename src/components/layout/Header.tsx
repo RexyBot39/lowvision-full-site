@@ -7,6 +7,9 @@ interface NavLink { label: string; href: string; }
 interface MenuColumn { heading?: string; links: NavLink[]; }
 interface NavSection { key: string; label: string; columns: MenuColumn[]; }
 
+// Every link here goes to a distinct page (or a filter the page actually reads).
+// Don't add placeholders or duplicate hrefs: if a menu item would land on the
+// same page as another item, leave it out.
 const navSections: NavSection[] = [
   {
     key: 'start-here',
@@ -23,19 +26,19 @@ const navSections: NavSection[] = [
         ],
       },
       {
-        heading: 'What This Site Does',
+        heading: 'Learn the Basics',
         links: [
+          { label: 'Start Here Overview', href: '/start-here' },
           { label: 'What "Low Vision" Means', href: '/start-here/what-is-low-vision' },
-          { label: 'How Care Usually Works', href: '/start-here' },
-          { label: 'Common Conditions & Patterns', href: '/start-here' },
           { label: 'Your First 3 Next Steps', href: '/start-here/next-steps' },
+          { label: 'Frequently Asked Questions', href: '/faq' },
         ],
       },
       {
-        heading: 'Get Started',
+        heading: 'Patient Intake',
         links: [
+          { label: 'How the Intake Works', href: '/intake' },
           { label: 'Start Intake (2–6 min)', href: '/intake/start' },
-          { label: 'Find Services Near Me', href: '/resources' },
         ],
       },
     ],
@@ -47,9 +50,7 @@ const navSections: NavSection[] = [
       {
         heading: 'Search & Browse',
         links: [
-          { label: 'Search by ZIP / Postal Code', href: '/resources' },
-          { label: 'Browse by State / Province', href: '/resources' },
-          { label: 'Browse by Service Type', href: '/resources/service-types' },
+          { label: 'Search the Directory', href: '/resources' },
           { label: 'Virtual Services', href: '/resources?virtual=true' },
         ],
       },
@@ -62,47 +63,6 @@ const navSections: NavSection[] = [
           { label: 'Assistive Technology Programs', href: '/resources?type=Assistive+Technology' },
         ],
       },
-      {
-        heading: 'Compare & Decide',
-        links: [
-          { label: 'Compare Services', href: '/resources' },
-          { label: 'What to Ask When You Call', href: '/resources' },
-        ],
-      },
-    ],
-  },
-  {
-    key: 'intake',
-    label: 'Patient Intake',
-    columns: [
-      {
-        heading: 'Start & Manage',
-        links: [
-          { label: 'Start Intake Questionnaire', href: '/intake/start' },
-          { label: 'Save & Continue Later', href: '/intake/start' },
-          { label: 'Update My Answers', href: '/intake/start' },
-          { label: 'Printable Summary', href: '/intake/results' },
-        ],
-      },
-      {
-        heading: "What You'll Get",
-        links: [
-          { label: 'Ranked Next Steps', href: '/intake/results' },
-          { label: 'Device Categories to Try', href: '/intake/results' },
-          { label: 'Local Services to Contact', href: '/intake/results' },
-          { label: 'Questions for Your Doctor', href: '/intake/results' },
-        ],
-      },
-      {
-        heading: 'Common Paths',
-        links: [
-          { label: 'Reading & Near Tasks', href: '/intake/start?goal=reading' },
-          { label: 'Mobility & Safety', href: '/intake/start?goal=mobility' },
-          { label: 'Glare & Light Sensitivity', href: '/intake/start?goal=glare' },
-          { label: 'School & Learning', href: '/intake/start?goal=school' },
-          { label: 'Work & Computer Use', href: '/intake/start?goal=work' },
-        ],
-      },
     ],
   },
   {
@@ -113,7 +73,6 @@ const navSections: NavSection[] = [
         heading: 'Clinical Workflow',
         links: [
           { label: 'Diagnostic Resources Hub', href: '/professionals/diagnostic-resources' },
-          { label: 'Core Domains Library', href: '/professionals/diagnostic-resources/core-domains' },
           { label: 'Test Selection Recipes', href: '/professionals/test-selection-recipes' },
           { label: 'Follow-Up Protocols', href: '/professionals/follow-up-modification-protocols' },
         ],
@@ -123,7 +82,7 @@ const navSections: NavSection[] = [
         links: [
           { label: 'Referral Pathways', href: '/professionals/referral-pathways' },
           { label: 'Functional Outcomes & Metrics', href: '/professionals/functional-outcomes-metrics' },
-          { label: 'Coding & Coverage Guide', href: '/professionals/coding-coverage-guide' },
+          { label: 'Billing & Coding Guide', href: '/professionals/coding-coverage-guide' },
         ],
       },
       {
@@ -160,10 +119,9 @@ const navSections: NavSection[] = [
         ],
       },
       {
-        heading: 'Appeals & Documentation',
+        heading: 'Appeals',
         links: [
-          { label: 'Appeals & Documentation', href: '/coverage-funding/appeals-documentation' },
-          { label: 'Letters of Medical Necessity', href: '/coverage-funding/appeals-documentation' },
+          { label: 'Appeals & Letters of Medical Necessity', href: '/coverage-funding/appeals-documentation' },
         ],
       },
     ],
@@ -175,28 +133,19 @@ const navSections: NavSection[] = [
       {
         heading: 'Core Rehab Services',
         links: [
+          { label: 'Rehab Overview', href: '/rehab-training' },
           { label: 'Functional Vision Assessment', href: '/rehab-training/functional-vision-assessment' },
           { label: 'OT & ADL Training', href: '/rehab-training/adl-training' },
           { label: 'Orientation & Mobility (O&M)', href: '/rehab-training/orientation-mobility' },
+        ],
+      },
+      {
+        heading: 'Skills & Setup',
+        links: [
           { label: 'Visual Skills Training', href: '/rehab-training/visual-skills-training' },
           { label: 'Assistive Tech Instruction', href: '/rehab-training/assistive-tech-instruction' },
           { label: 'Home Modifications', href: '/rehab-training/home-modifications' },
           { label: 'Tele-Rehab Options', href: '/rehab-training/tele-rehab-options' },
-        ],
-      },
-      {
-        heading: 'Where Rehab Happens',
-        links: [
-          { label: 'Clinic-Based Rehab', href: '/rehab-training' },
-          { label: 'Home & Community Rehab', href: '/rehab-training' },
-          { label: 'Tele-Rehab Options', href: '/rehab-training/tele-rehab-options' },
-        ],
-      },
-      {
-        heading: 'For Families',
-        links: [
-          { label: 'Home Setup & Lighting', href: '/rehab-training/home-modifications' },
-          { label: 'Safety Checklists', href: '/rehab-training/home-modifications' },
         ],
       },
     ],
@@ -208,27 +157,18 @@ const navSections: NavSection[] = [
       {
         heading: 'Device Types',
         links: [
+          { label: 'Devices Overview', href: '/devices-technology' },
           { label: 'Optical Devices', href: '/devices-technology/optical-devices' },
           { label: 'Electronic & Digital Aids', href: '/devices-technology/electronic-digital-aids' },
           { label: 'Software & Apps', href: '/devices-technology/software-apps' },
+        ],
+      },
+      {
+        heading: 'Everyday Tools',
+        links: [
           { label: 'Daily Living Aids', href: '/devices-technology/daily-living-aids' },
           { label: 'Glare & Light Management', href: '/devices-technology/glare-light-management' },
           { label: 'Braille & Literacy Tools', href: '/devices-technology/braille-literacy-tools' },
-        ],
-      },
-      {
-        heading: 'By Task',
-        links: [
-          { label: 'Reading & Mail', href: '/intake/start?goal=reading' },
-          { label: 'Computer & Schoolwork', href: '/intake/start?goal=work' },
-          { label: 'Mobility & Outdoor Use', href: '/intake/start?goal=mobility' },
-          { label: 'Glare / Light Sensitivity', href: '/intake/start?goal=glare' },
-        ],
-      },
-      {
-        heading: 'Compare & Learn',
-        links: [
-          { label: 'Compare Devices', href: '/devices-technology/compare' },
         ],
       },
     ],
@@ -248,8 +188,7 @@ const navSections: NavSection[] = [
         heading: 'Education & Youth',
         links: [
           { label: 'School Services (TVI / IEP / 504)', href: '/community-support/education-services' },
-          { label: 'Transition to Adulthood', href: '/community-support/youth-family-pathways' },
-          { label: 'Youth & Family Pathways', href: '/community-support/youth-family-pathways' },
+          { label: 'Youth, Family & Transition', href: '/community-support/youth-family-pathways' },
         ],
       },
       {

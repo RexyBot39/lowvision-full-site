@@ -6,9 +6,12 @@ export interface ApiUser {
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** Per-field validation messages, when the server sends them. */
+  fields?: Record<string, string>;
+  constructor(message: string, status: number, fields?: Record<string, string>) {
     super(message);
     this.status = status;
+    this.fields = fields;
   }
 }
 
@@ -26,8 +29,9 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
     /* non-JSON response */
   }
   if (!res.ok) {
-    const message = (data as { error?: string } | null)?.error ?? 'Something went wrong. Please try again.';
-    throw new ApiError(message, res.status);
+    const body = data as { error?: string; fields?: Record<string, string> } | null;
+    const message = body?.error ?? 'Something went wrong. Please try again.';
+    throw new ApiError(message, res.status, body?.fields);
   }
   return data as T;
 }
