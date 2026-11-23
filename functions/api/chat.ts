@@ -1,9 +1,10 @@
 /**
- * Cloudflare Pages Functions entry for the assistant: serves POST /api/chat.
- * The logic lives in server/chat/handler.ts.
+ * Cloudflare Pages Functions entry for the assistant: serves POST /api/chat
+ * when the site is deployed as a Pages project. (The Workers deployment uses
+ * worker/index.ts instead.) The logic lives in server/chat/handler.ts.
  *
- * Set ANTHROPIC_API_KEY (as a secret) in Cloudflare → Workers & Pages →
- * lowvision-full-site → Settings → Variables and Secrets.
+ * Set OPENAI_API_KEY as a secret in Cloudflare → Workers & Pages →
+ * lowvision-full-site (Pages) → Settings → Variables and Secrets.
  */
 import { handleChat, type ChatEnv } from '../../server/chat/handler';
 

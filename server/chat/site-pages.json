@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-22T22:28:56.099Z",
+ "generatedAt": "2026-11-23T00:20:48.636Z",
  "pages": [
   {
    "path": "/",
@@ -301,7 +301,7 @@
     },
     {
      "heading": "AI assistant",
-     "text": "When you use the Ask the Assistant feature, your questions, the earlier messages in that conversation, and the address of the page you are on are sent to our AI provider, Anthropic, to generate an answer. Answers may also search public websites. The conversation is kept in your browser only for the current tab and is erased when you close it. Please don't include personal details such as your full name, Social Security number, or medical record numbers. If you use voice input, your browser's built-in speech recognition converts your speech to text; depending on your browser, that audio may be processed by the browser maker's service. Read-aloud uses your device's built-in voices."
+     "text": "When you use the Ask the Assistant feature, your questions, the earlier messages in that conversation, and the address of the page you are on are sent to our AI provider, OpenAI, to generate an answer. We turn off OpenAI's option to save conversations, though OpenAI may keep request data for a limited time under its own policies. Answers may also search public websites. The conversation is kept in your browser only for the current tab and is erased when you close it. Please don't include personal details such as your full name, Social Security number, or medical record numbers. If you use voice input, your browser's built-in speech recognition converts your speech to text; depending on your browser, that audio may be processed by the browser maker's service. Read-aloud uses your device's built-in voices."
     },
     {
      "heading": "Analytics",
@@ -332,7 +332,7 @@
     },
     {
      "heading": "Tips for using the assistant",
-     "text": "- Screen reader users: each message starts with a heading, \"You said\" or \"Assistant said\", so you can move between messages with your heading key (H in most screen readers). New answers are announced when complete; you can turn that off under Voice and reading options.\n\n- Voice input: select Speak, ask your question, and it sends when you stop talking. Your browser will ask permission to use the microphone the first time. Voice input works in Chrome, Edge, and Safari.\n\n- Spoken answers: turn on Read answers aloud and choose a speaking speed and voice. Press Escape or Stop speaking at any time.\n\n- Larger text and higher contrast: use the text size and High Contrast controls at the top of every page; the assistant follows them.\n\n- For a personalized plan you can print, try the intake questionnaire (/intake/start) . To browse services yourself, use Find Local Resources (/resources) .\n\nYour questions, and the address of the page you are on, are sent to our AI provider, Anthropic, to generate answers. Please don't include personal details. On this device the conversation is kept only in this browser tab and is erased when you close it. See our privacy policy (/about/privacy) ."
+     "text": "- Screen reader users: each message starts with a heading, \"You said\" or \"Assistant said\", so you can move between messages with your heading key (H in most screen readers). New answers are announced when complete; you can turn that off under Voice and reading options.\n\n- Voice input: select Speak, ask your question, and it sends when you stop talking. Your browser will ask permission to use the microphone the first time. Voice input works in Chrome, Edge, and Safari.\n\n- Spoken answers: turn on Read answers aloud and choose a speaking speed and voice. Press Escape or Stop speaking at any time.\n\n- Larger text and higher contrast: use the text size and High Contrast controls at the top of every page; the assistant follows them.\n\n- For a personalized plan you can print, try the intake questionnaire (/intake/start) . To browse services yourself, use Find Local Resources (/resources) .\n\nYour questions, and the address of the page you are on, are sent to our AI provider, OpenAI, to generate answers. Please don't include personal details. On this device the conversation is kept only in this browser tab and is erased when you close it. See our privacy policy (/about/privacy) ."
     }
    ]
   },

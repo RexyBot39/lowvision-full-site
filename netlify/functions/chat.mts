@@ -4,8 +4,8 @@ import { handleChat } from '../../server/chat/handler.ts';
 
 export default (req: Request) =>
   handleChat(req, {
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-    ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    OPENAI_BASE_URL: process.env.OPENAI_BASE_URL,
     CHAT_MODEL: process.env.CHAT_MODEL,
     CHAT_EFFORT: process.env.CHAT_EFFORT,
   });

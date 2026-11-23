@@ -59,7 +59,7 @@ export function AssistantPage() {
           </li>
         </ul>
         <p className="mt-6 text-gray-800">
-          Your questions, and the address of the page you are on, are sent to our AI provider, Anthropic, to generate answers.
+          Your questions, and the address of the page you are on, are sent to our AI provider, OpenAI, to generate answers.
           Please don't include personal details. On this device the conversation is kept only in this browser tab and is
           erased when you close it. See our{' '}
           <Link to="/about/privacy" className="text-blue-800 underline font-medium">privacy policy</Link>.
