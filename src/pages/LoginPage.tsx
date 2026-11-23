@@ -78,7 +78,7 @@ export function LoginPage() {
         {/* Logo / heading */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-block mb-4">
-            <img src="/logo.png" alt="Low Vision Navigator" className="h-14 mx-auto" />
+            <img src="/logo.png" alt="Low Vision Navigator" width={864} height={240} className="h-14 w-auto mx-auto" />
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">
             {mode === 'signin' ? 'Welcome back' : 'Create your account'}

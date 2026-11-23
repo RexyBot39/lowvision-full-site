@@ -80,7 +80,7 @@ export function Footer() {
 
         <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center">
-            <img src="/logo.png" alt="Low Vision Navigator" className="h-7 w-auto brightness-0 invert" />
+            <img src="/logo.png" alt="Low Vision Navigator" width={864} height={240} loading="lazy" className="h-9 w-auto brightness-0 invert" />
           </div>
 
           <div className="flex flex-wrap gap-4 text-xs text-gray-500">
