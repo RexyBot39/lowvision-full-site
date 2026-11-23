@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { api, type ApiUser } from '../lib/api';
+import { identifyUser, resetUser } from '../lib/analytics';
 import { syncOnSignIn, stopSync } from '../lib/planSync';
 
 interface AuthContextValue {
@@ -36,7 +37,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then(({ configured, user: me }) => {
         setAuthConfigured(configured);
         setUser(me);
-        if (me) void syncOnSignIn();
+        if (me) {
+          identifyUser(me);
+          void syncOnSignIn();
+        }
       })
       .catch(() => setAuthConfigured(false))
       .finally(() => setLoading(false));
@@ -45,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signInWithEmail(email: string, password: string) {
     try {
       const { user: me } = await api<{ user: ApiUser }>('/auth/login', { method: 'POST', body: { email, password } });
+      identifyUser(me);
       await syncOnSignIn();
       setUser(me);
       return { error: null };
@@ -59,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         body: { email, password, name: displayName },
       });
+      identifyUser(me);
       await syncOnSignIn();
       setUser(me);
       return { error: null };
@@ -73,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* clear local state regardless */
     }
+    resetUser();
     stopSync();
     setUser(null);
   }

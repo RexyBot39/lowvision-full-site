@@ -22,7 +22,7 @@ import { db, migrate } from './db.mjs';
 import { apiRouter } from './api.mjs';
 import { publicApiRouter } from './public-api.mjs';
 import { adminRouter } from './admin-api.mjs';
-import { ingestProxy, collectionEnabled, reportingEnabled } from './posthog.mjs';
+import { ingestProxy, collectionEnabled, reportingEnabled, posthogLogger, shutdownPosthog } from './posthog.mjs';
 import { startSeoScheduler } from './seo.mjs';
 import { chatRoute } from './chat-route.mjs';
 
@@ -53,7 +53,7 @@ app.use((_req, res, next) => {
     'Permissions-Policy': 'camera=(), microphone=(self), geolocation=()',
     'Content-Security-Policy':
       "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
-      "img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none';",
+      "img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; frame-ancestors 'none';",
   });
   next();
 });
@@ -107,10 +107,40 @@ app.get('*', (req, res) => {
   res.sendFile(file);
 });
 
+let server;
+let shuttingDown = false;
+
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  posthogLogger?.emit({
+    severityText: 'INFO',
+    body: 'application shutdown requested',
+    attributes: { event: 'application_shutdown_requested', signal },
+  });
+
+  // Do not block shutdown on analytics delivery; allow a short final flush.
+  await Promise.race([
+    shutdownPosthog(),
+    new Promise((resolve) => setTimeout(resolve, 1_000)),
+  ]);
+  if (server) server.close(() => process.exit(0));
+  else process.exit(0);
+  setTimeout(() => process.exit(1), 5_000).unref();
+}
+
+process.once('SIGTERM', () => void shutdown('SIGTERM'));
+process.once('SIGINT', () => void shutdown('SIGINT'));
+
 async function start() {
   if (db) {
     await migrate();
     console.log('[db] connected and migrated');
+    posthogLogger?.emit({
+      severityText: 'INFO',
+      body: 'database migrations completed',
+      attributes: { event: 'database_migrations_completed' },
+    });
   } else {
     console.warn('[db] DATABASE_URL is not set — accounts and plan sync are disabled');
   }
@@ -119,7 +149,18 @@ async function start() {
       `admin reports: ${reportingEnabled() ? 'PostHog' : 'built-in counter'}`,
   );
   if (db) startSeoScheduler();
-  app.listen(PORT, () => console.log(`[server] listening on :${PORT}`));
+  server = app.listen(PORT, () => {
+    console.log(`[server] listening on :${PORT}`);
+    posthogLogger?.emit({
+      severityText: 'INFO',
+      body: 'application started',
+      attributes: {
+        event: 'application_started',
+        database_configured: Boolean(db),
+        collection_enabled: collectionEnabled(),
+      },
+    });
+  });
 }
 
 start().catch((err) => {

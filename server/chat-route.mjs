@@ -8,6 +8,7 @@
  */
 
 import { Readable } from 'node:stream';
+import { aiPosthog } from './posthog.mjs';
 
 let handlerPromise;
 function loadHandler() {
@@ -56,6 +57,7 @@ export async function chatRoute(req, res) {
     OPENAI_BASE_URL: process.env.OPENAI_BASE_URL,
     CHAT_MODEL: process.env.CHAT_MODEL,
     CHAT_EFFORT: process.env.CHAT_EFFORT,
+    posthog: aiPosthog ?? undefined,
   });
 
   res.status(response.status);

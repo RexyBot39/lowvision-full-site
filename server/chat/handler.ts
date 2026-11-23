@@ -27,6 +27,8 @@
  * (required), CHAT_MODEL (default gpt-6-luna), CHAT_EFFORT (low | medium | high).
  */
 
+import { OpenAI as PostHogOpenAI } from '@posthog/ai/openai';
+import type { PostHog } from 'posthog-node';
 import OpenAI from 'openai';
 import { searchSite, getPage, searchDirectory, siteMap, isKnownPath } from './knowledge.ts';
 
@@ -36,6 +38,8 @@ export interface ChatEnv {
   OPENAI_BASE_URL?: string;
   CHAT_MODEL?: string;
   CHAT_EFFORT?: string;
+  /** Shared Node client supplied by the production server when PostHog is configured. */
+  posthog?: PostHog;
 }
 
 const DEFAULT_MODEL = 'gpt-6-luna';
@@ -149,14 +153,18 @@ interface IncomingMessage {
 }
 
 interface ChatRequest {
+  conversationId: string;
   messages: IncomingMessage[];
   pagePath?: string;
   preferences?: { brief?: boolean };
 }
 
+const SESSION_ID_PATTERN = /^[-A-Za-z0-9_~.@()!'|:]{1,128}$/;
+
 function parseRequest(body: unknown): ChatRequest | string {
   if (!body || typeof body !== 'object') return 'Invalid request.';
-  const { messages, pagePath, preferences } = body as Record<string, unknown>;
+  const { conversationId, messages, pagePath, preferences } = body as Record<string, unknown>;
+  if (typeof conversationId !== 'string' || !SESSION_ID_PATTERN.test(conversationId)) return 'Invalid conversation.';
   if (!Array.isArray(messages) || messages.length === 0) return 'No messages were sent.';
 
   const clean: IncomingMessage[] = [];
@@ -172,6 +180,7 @@ function parseRequest(body: unknown): ChatRequest | string {
   if (clean.length === 0 || clean[clean.length - 1].role !== 'user') return 'The last message must be from the user.';
 
   return {
+    conversationId,
     messages: clean,
     pagePath: typeof pagePath === 'string' ? pagePath.slice(0, 200) : undefined,
     preferences:
@@ -288,7 +297,7 @@ export async function handleChat(req: Request, env: ChatEnv): Promise<Response> 
   }
   if (typeof parsed === 'string') return Response.json({ error: parsed }, { status: 400 });
 
-  const { messages: history, pagePath, preferences } = parsed;
+  const { conversationId, messages: history, pagePath, preferences } = parsed;
 
   // Context about the visitor's situation goes in the final user turn, so the
   // instructions and tools stay identical across requests (better caching).
@@ -307,10 +316,14 @@ export async function handleChat(req: Request, env: ChatEnv): Promise<Response> 
     return { role: m.role, content: text };
   });
 
-  const client = new OpenAI({
+  const clientOptions = {
     apiKey: env.OPENAI_API_KEY,
     ...(env.OPENAI_BASE_URL ? { baseURL: env.OPENAI_BASE_URL } : {}),
-  });
+  };
+  const observedClient = env.posthog ? new PostHogOpenAI({ ...clientOptions, posthog: env.posthog }) : null;
+  const client = observedClient ? null : new OpenAI(clientOptions);
+  // A turn may call the model several times while it resolves local tools.
+  const traceId = crypto.randomUUID();
   const encoder = new TextEncoder();
 
   const body = new ReadableStream<Uint8Array>({
@@ -325,23 +338,31 @@ export async function handleChat(req: Request, env: ChatEnv): Promise<Response> 
 
       try {
         for (let iteration = 0; iteration < MAX_LOOP_ITERATIONS; iteration++) {
-          const stream = client.responses.stream(
-            {
-              model,
-              instructions: SYSTEM_PROMPT,
-              input,
-              tools: TOOLS,
-              reasoning: { effort },
-              max_output_tokens: 16000,
-              max_tool_calls: 10,
-              // Don't keep conversations on OpenAI's side; reasoning is passed back
-              // encrypted so multi-step tool use still works without storage.
-              store: false,
-              include: ['reasoning.encrypted_content'],
-              prompt_cache_key: 'lvn-assistant',
-            },
-            { signal: req.signal },
-          );
+          const requestOptions = {
+            model,
+            instructions: SYSTEM_PROMPT,
+            input,
+            tools: TOOLS,
+            reasoning: { effort },
+            max_output_tokens: 16000,
+            max_tool_calls: 10,
+            // Don't keep conversations on OpenAI's side; reasoning is passed back
+            // encrypted so multi-step tool use still works without storage.
+            store: false,
+            include: ['reasoning.encrypted_content'] as Array<'reasoning.encrypted_content'>,
+            prompt_cache_key: 'lvn-assistant',
+          };
+          const stream = observedClient
+            ? observedClient.responses.stream(
+                {
+                  ...requestOptions,
+                  posthogDistinctId: conversationId,
+                  posthogTraceId: traceId,
+                  posthogProperties: { $ai_session_id: conversationId },
+                },
+                { signal: req.signal },
+              )
+            : client!.responses.stream(requestOptions, { signal: req.signal });
 
           let startedTextThisTurn = false;
           for await (const event of stream) {
@@ -388,9 +409,29 @@ export async function handleChat(req: Request, env: ChatEnv): Promise<Response> 
             } catch {
               args = null;
             }
+            const startedAt = Date.now();
             const { content, isError } = args
               ? runTool(call.name, args)
               : { content: 'The tool arguments were not valid JSON. Please try again.', isError: true };
+            // The model wrapper captures generations; local tool execution is a sibling span in this turn.
+            try {
+              env.posthog?.capture({
+                // No authenticated account is available in this request context. This is an anonymous conversation id.
+                distinctId: conversationId,
+                event: '$ai_span',
+                properties: {
+                  $ai_trace_id: traceId,
+                  $ai_session_id: conversationId,
+                  $ai_span_id: crypto.randomUUID(),
+                  $ai_span_name: call.name,
+                  $ai_input_state: call.arguments,
+                  $ai_output_state: content,
+                  $ai_latency: (Date.now() - startedAt) / 1000,
+                },
+              });
+            } catch {
+              /* Observability never changes the assistant result. */
+            }
             input.push({ type: 'function_call_output', call_id: call.call_id, output: isError ? `Error: ${content}` : content });
           }
         }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Search, MapPin } from 'lucide-react';
 import { US_STATES, US_STATE_NAMES } from '../../data/directorySeed';
+import { trackEvent } from '../../lib/analytics';
 
 const SERVICE_CHIPS = [
   'Low Vision Clinic',
@@ -30,6 +31,11 @@ export function DirectorySearchPanel() {
     if (query) params.set('q', query);
     if (state) params.set('state', state);
     if (activeChips.length) params.set('type', activeChips.join(','));
+    trackEvent('directory_search_submitted', {
+      has_query: Boolean(query.trim()),
+      has_state_filter: Boolean(state),
+      service_type_count: activeChips.length,
+    });
     navigate(`/resources?${params.toString()}`);
   }
 

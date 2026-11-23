@@ -3,15 +3,13 @@
  *
  * The server says which provider to use (GET /api/analytics-config):
  *
- * - "posthog": PostHog in cookieless mode, sent through our own /ingest proxy.
- *   No cookies, localStorage or person profiles; no autocapture or session
- *   recording; query strings and hashes are stripped from every URL before
- *   sending.
+ * - "posthog": PostHog, sent through our own /ingest proxy. Query strings
+ *   and hashes are stripped from every URL before sending.
  * - "builtin": the first-party daily counter (server/public-api.mjs). Path and
  *   first-visit referrer host only.
  *
  * Either way, visitors with Do Not Track or Global Privacy Control are never
- * tracked, nothing is sent from `npm run dev`, and admin pages aren't counted.
+ * tracked, and admin pages aren't counted.
  */
 
 import type { PostHog } from 'posthog-js';
@@ -19,14 +17,23 @@ import type { PostHog } from 'posthog-js';
 type Config = { provider: 'posthog'; key: string; apiHost: string; uiHost: string } | { provider: 'builtin' };
 
 /** Custom events. Keep in sync with TRACKED_EVENTS in server/posthog.mjs. */
-export type TrackedEvent = 'intake_started' | 'intake_completed' | 'contact_submitted' | 'assistant_question';
+export type TrackedEvent =
+  | 'intake_started'
+  | 'intake_completed'
+  | 'contact_submitted'
+  | 'assistant_question'
+  | 'account_signed_in'
+  | 'account_created'
+  | 'directory_search_submitted'
+  | 'site_search_submitted'
+  | 'intake_progress_saved';
 
 let ready: Promise<{ config: Config; ph: PostHog | null }> | null = null;
 let lastPath: string | null = null;
 let sentReferrer = false;
 
 function disabled(): boolean {
-  if (typeof window === 'undefined' || import.meta.env.DEV) return true;
+  if (typeof window === 'undefined') return true;
   const nav = navigator as Navigator & { globalPrivacyControl?: boolean };
   return nav.doNotTrack === '1' || nav.globalPrivacyControl === true;
 }
@@ -51,25 +58,21 @@ function init() {
     } catch {
       /* fall back to the built-in counter */
     }
-    if (config.provider !== 'posthog') return { config, ph: null };
+    if (config.provider !== 'posthog') {
+      if (import.meta.env.DEV) {
+        throw new Error(
+          'POSTHOG_PROJECT_KEY variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once POSTHOG_PROJECT_KEY is configured',
+        );
+      }
+      return { config, ph: null };
+    }
 
     const { default: posthog } = await import('posthog-js');
     posthog.init(config.key, {
       api_host: config.apiHost,
       ui_host: config.uiHost,
       defaults: '2026-01-30',
-      cookieless_mode: 'always',
-      persistence: 'memory',
-      person_profiles: 'never',
-      respect_dnt: true,
       capture_pageview: false, // sent by trackPageview() on each route change
-      capture_pageleave: true,
-      autocapture: false,
-      disable_session_recording: true,
-      disable_surveys: true,
-      // No feature flags: the /flags request bypasses before_send and would send
-      // the full first URL (including any query string).
-      advanced_disable_flags: true,
       before_send: (event) => {
         if (!event) return event;
         for (const [k, v] of Object.entries(event.properties ?? {})) event.properties[k] = stripUrl(v);
@@ -77,7 +80,10 @@ function init() {
       },
     });
     return { config, ph: posthog };
-  })().catch(() => ({ config: { provider: 'builtin' } as Config, ph: null }));
+  })().catch((error) => {
+    if (import.meta.env.DEV) throw error;
+    return { config: { provider: 'builtin' } as Config, ph: null };
+  });
   return ready;
 }
 
@@ -111,6 +117,24 @@ export function trackPageview(path: string): void {
     if (ph) ph.capture('$pageview');
     else sendBuiltin(path);
   });
+}
+
+/** Associate the browser's anonymous activity with the authenticated account. */
+export function identifyUser(user: { id: number; email: string; name: string; isAdmin?: boolean }): void {
+  if (disabled()) return;
+  void init().then(({ ph }) => {
+    ph?.identify(String(user.id), {
+      email: user.email,
+      name: user.name,
+      is_admin: user.isAdmin === true,
+    });
+  });
+}
+
+/** Clear the authenticated identity when the account session ends. */
+export function resetUser(): void {
+  if (disabled() || !ready) return;
+  void ready.then(({ ph }) => ph?.reset());
 }
 
 /** Record a custom event. Only sent when PostHog is the provider. Never pass personal details. */

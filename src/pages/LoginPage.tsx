@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { trackEvent } from '../lib/analytics';
 import { PageSEO } from '../components/seo/PageSEO';
 
 type Mode = 'signin' | 'signup';
@@ -55,10 +56,12 @@ export function LoginPage() {
       if (mode === 'signin') {
         const { error: err } = await signInWithEmail(email, password);
         if (err) { setError(err); return; }
+        trackEvent('account_signed_in');
         navigate(redirectTo, { replace: true });
       } else {
         const { error: err } = await signUpWithEmail(email, password, displayName.trim());
         if (err) { setError(err); return; }
+        trackEvent('account_created');
         navigate(redirectTo, { replace: true });
       }
     } finally {
