@@ -35,10 +35,32 @@ else
     echo >&2 "warning: Add a Railway volume mounted at $PERSIST (see crm/README.md)."
 fi
 
+# Apache can load only one MPM, and mod_php needs mpm_prefork. On Railway the
+# container ended up with a second MPM enabled ("AH00534: More than one MPM
+# loaded"), so make sure prefork is the only one before Apache starts.
+for mpm in mpm_event mpm_worker; do
+    if [ -e "/etc/apache2/mods-enabled/$mpm.load" ]; then
+        echo >&2 "info: Disabling Apache $mpm (only mpm_prefork works with PHP)."
+        rm -f "/etc/apache2/mods-enabled/$mpm.load" "/etc/apache2/mods-enabled/$mpm.conf"
+    fi
+done
+if [ ! -e /etc/apache2/mods-enabled/mpm_prefork.load ]; then
+    a2enmod -q mpm_prefork >/dev/null
+fi
+
 PORT=${PORT:-80}
 if [ "$PORT" != "80" ]; then
     sed -ri "s/^Listen 80$/Listen ${PORT}/" /etc/apache2/ports.conf
     sed -ri "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf
+fi
+
+# If Apache's config is still invalid, log where MPMs are loaded so the cause
+# is visible in the deploy logs instead of only "Configuration error".
+if ! apache2ctl -t >/dev/null 2>&1; then
+    echo >&2 "error: Apache configuration test failed:"
+    apache2ctl -t 2>&1 | sed 's/^/  /' >&2 || true
+    echo >&2 "error: MPM modules loaded by these files:"
+    grep -rln "LoadModule mpm_" /etc/apache2 2>/dev/null | sed 's/^/  /' >&2 || true
 fi
 
 # Job daemon: wait until EspoCRM is installed and ready, fix ownership of files
