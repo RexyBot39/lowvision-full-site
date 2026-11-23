@@ -34,7 +34,14 @@ In the same Railway project as the website:
 4. **Domain:** Settings → Networking → Generate Domain, or add a custom domain such as `crm.lowvisionnavigator.org`. Then make `ESPOCRM_SITE_URL` match it.
 5. Deploy. The first start installs EspoCRM (about a minute). The log shows `Installation completed successfully` and then `EspoCRM is ready; starting the job daemon`. Sign in with the admin username and password.
 
-The admin username and password are only used for the first install. Change the password later inside EspoCRM, not through the variable.
+The admin username and password are only read on the **first** install. If the variables weren't set yet at that moment, EspoCRM used its defaults: username `admin`, password `password`. Change those immediately.
+
+**Can't sign in? Reset the admin account:**
+1. Set `ESPOCRM_ADMIN_USERNAME` and `ESPOCRM_ADMIN_PASSWORD` to what you want, and add `ESPOCRM_RESET_ADMIN=true`.
+2. Redeploy. About a minute after start, the deploy log shows `Password set for admin user "…"`.
+3. Sign in, then remove `ESPOCRM_RESET_ADMIN`.
+
+The reset creates the user if it doesn't exist and sets its password. It runs once per username and password pair, so leaving the switch on won't undo a password you later change inside EspoCRM. The password is never written to the logs.
 
 **Upgrading:** change the version in `crm/Dockerfile` (tags at https://hub.docker.com/r/espocrm/espocrm/tags), commit, and deploy. EspoCRM migrates the database on start. Back up first: Railway volumes and the MySQL service both support backups.
 
