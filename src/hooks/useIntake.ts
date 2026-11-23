@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { IntakeAnswers } from '../lib/intake/types';
-
-const STORAGE_KEY = 'clearpath_intake_v1';
+import { PLAN_STORAGE_KEY as STORAGE_KEY, PLAN_SYNC_EVENT, schedulePlanPush } from '../lib/planSync';
 
 interface StoredIntake {
   answers: IntakeAnswers;
@@ -18,21 +17,36 @@ export function useIntake() {
   const [isComplete, setIsComplete] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
 
+  const [loaded, setLoaded] = useState(false);
+
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const stored: StoredIntake = JSON.parse(raw);
-        setAnswers(stored.answers);
-        setCurrentStep(stored.currentStep);
-        setIsComplete(stored.isComplete);
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const stored: StoredIntake = JSON.parse(raw);
+          setAnswers(stored.answers);
+          setCurrentStep(stored.currentStep);
+          setIsComplete(stored.isComplete);
+        } else {
+          setAnswers(defaultAnswers);
+          setCurrentStep(0);
+          setIsComplete(false);
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
+      setLoaded(true);
     }
+    loadFromStorage();
+    // Reload when the account's plan is pulled down after sign-in / cleared on sign-out.
+    window.addEventListener(PLAN_SYNC_EVENT, loadFromStorage);
+    return () => window.removeEventListener(PLAN_SYNC_EVENT, loadFromStorage);
   }, []);
 
   useEffect(() => {
+    // Don't overwrite the saved plan with defaults before it has been read.
+    if (!loaded) return;
     try {
       const stored: StoredIntake = {
         answers,
@@ -40,11 +54,22 @@ export function useIntake() {
         savedAt: new Date().toISOString(),
         isComplete,
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+      const next = JSON.stringify(stored);
+      const prev = localStorage.getItem(STORAGE_KEY);
+      // Don't create a saved plan out of untouched defaults.
+      const untouched =
+        !isComplete && currentStep === 0 && JSON.stringify(answers) === JSON.stringify(defaultAnswers);
+      if (!prev && untouched) return;
+      // Only write (and sync) when something besides the timestamp changed.
+      if (prev && JSON.stringify({ ...JSON.parse(prev), savedAt: '' }) === JSON.stringify({ ...stored, savedAt: '' })) {
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY, next);
+      schedulePlanPush();
     } catch {
       /* ignore */
     }
-  }, [answers, currentStep, isComplete]);
+  }, [loaded, answers, currentStep, isComplete]);
 
   const updateAnswers = useCallback((partial: Partial<IntakeAnswers>) => {
     setAnswers((prev) => ({ ...prev, ...partial }));
@@ -67,6 +92,7 @@ export function useIntake() {
     setCurrentStep(0);
     setIsComplete(false);
     localStorage.removeItem(STORAGE_KEY);
+    schedulePlanPush();
   }, []);
 
   const saveAndShowMessage = useCallback(() => {

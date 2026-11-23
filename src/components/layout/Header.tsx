@@ -356,12 +356,12 @@ export function Header() {
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-semibold text-sm hover:bg-blue-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
                   >
-                    {(user.user_metadata?.full_name as string)?.[0]?.toUpperCase() ?? <UserIcon className="h-4 w-4" aria-hidden="true" />}
+                    {user.name?.[0]?.toUpperCase() ?? <UserIcon className="h-4 w-4" aria-hidden="true" />}
                   </button>
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-50">
                       <div className="px-4 py-2.5 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900 truncate">{user.user_metadata?.full_name as string ?? 'My Account'}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate">{user.name || 'My Account'}</p>
                         <p className="text-xs text-gray-500 truncate">{user.email}</p>
                       </div>
                       <Link

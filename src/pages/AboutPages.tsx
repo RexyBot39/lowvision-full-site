@@ -215,7 +215,13 @@ export function PrivacyPage() {
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-3">Intake questionnaire data</h2>
           <p className="text-gray-600 leading-relaxed">
-            Your intake questionnaire answers are stored only on your device using your browser's localStorage. They are never transmitted to our servers, never shared with third parties, and never used for advertising. You can delete this data at any time by clicking "Start Over" on the results page or clearing your browser's local storage.
+            If you use the intake questionnaire without an account, your answers are stored only on your device using your browser's localStorage and are never transmitted to our servers. You can delete this data at any time by clicking "Start Over" on the results page or clearing your browser's local storage.
+          </p>
+        </section>
+        <section>
+          <h2 className="text-xl font-bold text-gray-900 mb-3">Optional accounts</h2>
+          <p className="text-gray-600 leading-relaxed">
+            Creating an account is optional. If you sign in, we store your name, email address, a securely hashed password, and your saved plan on our own servers so you can open it from any device. When you sign out, the plan is removed from that device but stays in your account. Your answers are never shared with third parties and never used for advertising. Clicking "Start Over" while signed in also deletes the saved plan from your account.
           </p>
         </section>
         <section>

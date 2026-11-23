@@ -40,7 +40,7 @@ export function SavedPlanPage() {
     <div className="min-h-screen bg-gray-50">
       <PageSEO
         title="Your Saved Low Vision Plan"
-        description="View your personalized low vision plan based on your intake questionnaire answers. Your plan is stored privately on your device."
+        description="View your personalized low vision plan based on your intake questionnaire answers. Your plan is stored privately on your device, or in your account if you sign in."
         noIndex
       />
       <div className="bg-blue-800 text-white">

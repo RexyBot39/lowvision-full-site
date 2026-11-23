@@ -82,7 +82,7 @@ export function IntakePage() {
         </Link>
 
         <p className="text-center text-xs text-gray-400 mt-3">
-          Your answers are stored only on your device and never shared.
+          Your answers are stored on your device (or in your account if you sign in) and never shared.
         </p>
 
         <div className="mt-8">

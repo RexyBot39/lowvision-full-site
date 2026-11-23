@@ -1,24 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { PageSEO } from '../components/seo/PageSEO';
 
 type Mode = 'signin' | 'signup';
 
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-      <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-      <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-    </svg>
-  );
-}
-
 export function LoginPage() {
-  const { user, signInWithEmail, signUpWithEmail, signInWithGoogle, authConfigured } = useAuth();
+  const { user, signInWithEmail, signUpWithEmail, authConfigured } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') ?? '/saved-plan';
@@ -31,9 +20,7 @@ export function LoginPage() {
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
 
   // Already logged in — redirect
   useEffect(() => {
@@ -46,7 +33,6 @@ export function LoginPage() {
     setConfirmPassword('');
     setDisplayName('');
     setError('');
-    setSuccessMessage('');
   }
 
   function switchMode(m: Mode) {
@@ -57,7 +43,6 @@ export function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    setSuccessMessage('');
 
     if (mode === 'signup') {
       if (!displayName.trim()) { setError('Please enter your name.'); return; }
@@ -69,29 +54,15 @@ export function LoginPage() {
     try {
       if (mode === 'signin') {
         const { error: err } = await signInWithEmail(email, password);
-        if (err) { setError(friendlyError(err.message)); return; }
+        if (err) { setError(err); return; }
         navigate(redirectTo, { replace: true });
       } else {
         const { error: err } = await signUpWithEmail(email, password, displayName.trim());
-        if (err) { setError(friendlyError(err.message)); return; }
-        setSuccessMessage('Account created! Check your email to confirm your address, then sign in.');
-        setMode('signin');
-        setEmail(email);
-        setPassword('');
+        if (err) { setError(err); return; }
+        navigate(redirectTo, { replace: true });
       }
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleGoogle() {
-    setError('');
-    setGoogleLoading(true);
-    try {
-      const { error: err } = await signInWithGoogle();
-      if (err) setError(friendlyError(err.message));
-    } finally {
-      setGoogleLoading(false);
     }
   }
 
@@ -120,21 +91,13 @@ export function LoginPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          {/* Supabase not configured warning */}
+          {/* Accounts unavailable (no database configured) */}
           {!authConfigured && (
             <div className="mb-6 flex gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
               <span>
-                Authentication is not configured. Copy <code className="font-mono bg-amber-100 px-1 rounded">.env.example</code> to <code className="font-mono bg-amber-100 px-1 rounded">.env.local</code> and add your Supabase credentials.
+                Accounts are temporarily unavailable. You can still use the intake — your plan is saved on this device.
               </span>
-            </div>
-          )}
-
-          {/* Success message */}
-          {successMessage && (
-            <div className="mb-6 flex gap-2.5 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800" role="status">
-              <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
-              <span>{successMessage}</span>
             </div>
           )}
 
@@ -163,25 +126,6 @@ export function LoginPage() {
                 {m === 'signin' ? 'Sign In' : 'Create Account'}
               </button>
             ))}
-          </div>
-
-          {/* Google button */}
-          <button
-            type="button"
-            onClick={handleGoogle}
-            disabled={googleLoading || !authConfigured}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {googleLoading
-              ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              : <GoogleIcon />}
-            Continue with Google
-          </button>
-
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400 font-medium">or</span>
-            <div className="flex-1 h-px bg-gray-200" />
           </div>
 
           {/* Email/password form */}
@@ -225,15 +169,6 @@ export function LoginPage() {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                {mode === 'signin' && (
-                  <button
-                    type="button"
-                    onClick={() => {/* forgot password — future feature */}}
-                    className="text-xs text-blue-700 hover:underline focus-visible:outline-none focus-visible:underline"
-                  >
-                    Forgot password?
-                  </button>
-                )}
               </div>
               <div className="relative">
                 <input
@@ -314,14 +249,4 @@ export function LoginPage() {
       </div>
     </div>
   );
-}
-
-function friendlyError(msg: string): string {
-  const lower = msg.toLowerCase();
-  if (lower.includes('invalid login') || lower.includes('invalid credentials')) return 'Incorrect email or password.';
-  if (lower.includes('email not confirmed')) return 'Please confirm your email address first.';
-  if (lower.includes('user already registered')) return 'An account with this email already exists.';
-  if (lower.includes('password')) return 'Password is too weak. Use at least 8 characters.';
-  if (lower.includes('rate limit')) return 'Too many attempts. Please wait a moment and try again.';
-  return msg;
 }

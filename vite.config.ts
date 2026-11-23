@@ -10,4 +10,8 @@ export default defineConfig({
     // Keep react-helmet-async bundled for SSR so its HelmetProvider context works
     noExternal: ['react-helmet-async'],
   },
+  server: {
+    // In development, run `npm run dev:server` alongside `npm run dev`
+    proxy: { '/api': 'http://localhost:3000' },
+  },
 });
