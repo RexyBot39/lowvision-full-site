@@ -99,6 +99,14 @@ variables are optional (see `.env.example`).
 limit of 10 messages an hour. Read and triage them on the dashboard's
 **Messages** tab.
 
+## Outreach CRM (EspoCRM)
+
+`crm/` deploys [EspoCRM](https://github.com/espocrm/espocrm) as a separate
+Railway service (with its own MySQL database) for emailing organizations about
+the site. `npm run crm:sync` loads the resource directory into it as Accounts
+on an outreach Target List. Setup, sending email, and campaign steps are in
+[`crm/README.md`](crm/README.md).
+
 ## AI assistant
 
 - `server/chat/handler.ts`: the assistant (OpenAI Responses API, site search
