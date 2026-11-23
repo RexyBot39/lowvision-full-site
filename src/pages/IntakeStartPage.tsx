@@ -4,6 +4,7 @@ import { IntakeStepper } from '../components/intake/IntakeStepper';
 import { useIntake } from '../hooks/useIntake';
 import { DisclaimerBox } from '../components/ui/DisclaimerBox';
 import { PageSEO } from '../components/seo/PageSEO';
+import { trackEvent } from '../lib/analytics';
 
 export function IntakeStartPage() {
   const [searchParams] = useSearchParams();
@@ -20,6 +21,7 @@ export function IntakeStartPage() {
     } else if (!resume) {
       // Fresh start — reset to step 0
       goToStep(0);
+      trackEvent('intake_started', { mode: mode === 'caregiver' ? 'caregiver' : 'patient' });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -28,13 +30,13 @@ export function IntakeStartPage() {
     <div className="min-h-screen bg-gray-50">
       <PageSEO
         title="Start Low Vision Intake Questionnaire"
-        description="Answer questions about your vision challenges and daily activities. Your answers are stored only on your device and help identify the right next steps."
+        description="Answer questions about your vision challenges and daily activities. Your answers are stored on your device (or privately in your account if you sign in) and help identify the right next steps."
         breadcrumbs={[{ label: 'Intake Questionnaire', href: '/intake' }, { label: 'Start' }]}
       />
       <div className="bg-blue-800 text-white">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6">
           <h1 className="text-lg font-bold">Patient Intake Questionnaire</h1>
-          <p className="text-blue-200 text-sm mt-1">Your answers are stored only on your device. Answer at your own pace.</p>
+          <p className="text-blue-200 text-sm mt-1">Your answers are stored on your device unless you sign in. Answer at your own pace.</p>
         </div>
       </div>
 

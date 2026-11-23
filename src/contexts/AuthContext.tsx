@@ -1,78 +1,89 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import type { Session, User, AuthError } from '@supabase/supabase-js';
-import { supabase, authConfigured } from '../lib/supabase';
+import { api, type ApiUser } from '../lib/api';
+import { syncOnSignIn, stopSync } from '../lib/planSync';
 
 interface AuthContextValue {
-  user: User | null;
-  session: Session | null;
+  user: ApiUser | null;
   loading: boolean;
   authConfigured: boolean;
-  signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signUpWithEmail: (email: string, password: string, displayName: string) => Promise<{ error: AuthError | null }>;
-  signInWithGoogle: () => Promise<{ error: AuthError | null }>;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUpWithEmail: (email: string, password: string, displayName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+const noop = async () => ({ error: 'Accounts are not available.' });
+
+// Default value used during prerendering (no provider) — signed out.
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  loading: false,
+  authConfigured: true,
+  signInWithEmail: noop,
+  signUpWithEmail: noop,
+  signOut: async () => {},
+});
+
+const errorMessage = (err: unknown) =>
+  err instanceof Error ? err.message : 'Something went wrong. Please try again.';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<ApiUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authConfigured, setAuthConfigured] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-    });
-
-    return () => listener.subscription.unsubscribe();
+    api<{ configured: boolean; user: ApiUser | null }>('/auth/me')
+      .then(({ configured, user: me }) => {
+        setAuthConfigured(configured);
+        setUser(me);
+        if (me) void syncOnSignIn();
+      })
+      .catch(() => setAuthConfigured(false))
+      .finally(() => setLoading(false));
   }, []);
 
   async function signInWithEmail(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    try {
+      const { user: me } = await api<{ user: ApiUser }>('/auth/login', { method: 'POST', body: { email, password } });
+      await syncOnSignIn();
+      setUser(me);
+      return { error: null };
+    } catch (err) {
+      return { error: errorMessage(err) };
+    }
   }
 
   async function signUpWithEmail(email: string, password: string, displayName: string) {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: displayName } },
-    });
-    return { error };
-  }
-
-  async function signInWithGoogle() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    return { error };
+    try {
+      const { user: me } = await api<{ user: ApiUser }>('/auth/signup', {
+        method: 'POST',
+        body: { email, password, name: displayName },
+      });
+      await syncOnSignIn();
+      setUser(me);
+      return { error: null };
+    } catch (err) {
+      return { error: errorMessage(err) };
+    }
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    try {
+      await api('/auth/logout', { method: 'POST', body: {} });
+    } catch {
+      /* clear local state regardless */
+    }
+    stopSync();
+    setUser(null);
   }
 
   return (
-    <AuthContext.Provider value={{
-      user, session, loading, authConfigured,
-      signInWithEmail, signUpWithEmail, signInWithGoogle, signOut,
-    }}>
+    <AuthContext.Provider value={{ user, loading, authConfigured, signInWithEmail, signUpWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
-  return ctx;
+  return useContext(AuthContext);
 }

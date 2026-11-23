@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ContentPageLayout } from '../components/ui/ContentPageLayout';
 import { CheckCircle, ArrowRight, Type, Eye, Monitor } from 'lucide-react';
 import { useAccessibility } from '../hooks/useAccessibility';
+import { api, ApiError } from '../lib/api';
+import { trackEvent } from '../lib/analytics';
 
 function aboutPageSchema(name: string) {
   return {
@@ -215,19 +217,37 @@ export function PrivacyPage() {
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-3">Intake questionnaire data</h2>
           <p className="text-gray-600 leading-relaxed">
-            Your intake questionnaire answers are stored only on your device using your browser's localStorage. They are never transmitted to our servers, never shared with third parties, and never used for advertising. You can delete this data at any time by clicking "Start Over" on the results page or clearing your browser's local storage.
+            If you use the intake questionnaire without an account, your answers are stored only on your device using your browser's localStorage and are never transmitted to our servers. You can delete this data at any time by clicking "Start Over" on the results page or clearing your browser's local storage.
+          </p>
+        </section>
+        <section>
+          <h2 className="text-xl font-bold text-gray-900 mb-3">Optional accounts</h2>
+          <p className="text-gray-600 leading-relaxed">
+            Creating an account is optional. If you sign in, we store your name, email address, a securely hashed password, and your saved plan on our own servers so you can open it from any device. When you sign out, the plan is removed from that device but stays in your account. Your answers are never shared with third parties and never used for advertising. Clicking "Start Over" while signed in also deletes the saved plan from your account.
+          </p>
+        </section>
+        <section>
+          <h2 className="text-xl font-bold text-gray-900 mb-3">AI assistant</h2>
+          <p className="text-gray-600 leading-relaxed">
+            When you use the Ask the Assistant feature, your questions, the earlier messages in that conversation, and the address of the page you are on are sent to our AI provider, OpenAI, to generate an answer. We turn off OpenAI's option to save conversations, though OpenAI may keep request data for a limited time under its own policies. Answers may also search public websites. The conversation is kept in your browser only for the current tab and is erased when you close it. Please don't include personal details such as your full name, Social Security number, or medical record numbers. If you use voice input, your browser's built-in speech recognition converts your speech to text; depending on your browser, that audio may be processed by the browser maker's service. Read-aloud uses your device's built-in voices.
           </p>
         </section>
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-3">Analytics</h2>
           <p className="text-gray-600 leading-relaxed">
-            We collect anonymized, aggregated analytics to understand how the platform is used—which pages are most visited, how people navigate the intake flow, and where users encounter friction. This data does not include personally identifiable information.
+            We use PostHog, an analytics service, to understand which pages are useful and where people get stuck. We set it up to protect your privacy: it doesn't use cookies or store anything on your device, it doesn't build a profile of you, and it never records your screen, what you type, or your conversations with the assistant. We send it the page you're on (with anything after a "?" or "#" removed), the site that linked you here, your general device type, and a few anonymous events such as "intake completed." Your IP address is passed along only so PostHog can estimate your country and count daily visitors without cookies; PostHog is told not to store it. Analytics data is sent through our own website address. If your browser sends Do Not Track or Global Privacy Control, we don't collect analytics at all.
+          </p>
+        </section>
+        <section>
+          <h2 className="text-xl font-bold text-gray-900 mb-3">Contact form</h2>
+          <p className="text-gray-600 leading-relaxed">
+            Messages sent through our contact form—your name, email address, message type, and message—are stored on our own servers so we can read and reply to them. We use them only to respond to you and to fix or improve the directory, and we never add you to a mailing list.
           </p>
         </section>
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-3">What we don't do</h2>
           <ul className="space-y-2">
-            {['We do not sell user data.', 'We do not use tracking pixels or advertising networks.', 'We do not require account creation or email submission to use the platform.', 'We do not share data with listed organizations or partners.'].map((item) => (
+            {['We do not sell user data.', 'We do not use tracking cookies, tracking pixels, or advertising networks.', 'We do not require account creation or email submission to use the platform.', 'We do not share data with listed organizations or partners.'].map((item) => (
               <li key={item} className="flex items-start gap-2.5 text-sm text-gray-700">
                 <span className="text-red-400 shrink-0">✕</span>
                 {item}
@@ -248,28 +268,48 @@ export function PrivacyPage() {
 
 export function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', type: '', message: '' });
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [form, setForm] = useState({ name: '', email: '', type: '', message: '', website: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate(): boolean {
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = 'Name is required.';
-    if (!form.email.trim() || !form.email.includes('@')) errs.email = 'A valid email is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errs.email = 'A valid email is required.';
     if (!form.type) errs.type = 'Please select a message type.';
     if (!form.message.trim()) errs.message = 'Message is required.';
+    else if (form.message.length > 5000) errs.message = 'Message must be 5,000 characters or fewer.';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (validate()) setSubmitted(true);
+    if (sending) return;
+    setSubmitError('');
+    if (!validate()) return;
+    setSending(true);
+    try {
+      await api('/contact', { method: 'POST', body: form });
+      trackEvent('contact_submitted', { type: form.type });
+      setSubmitted(true);
+    } catch (err) {
+      if (err instanceof ApiError && err.fields) setErrors(err.fields);
+      setSubmitError(
+        err instanceof ApiError
+          ? err.message
+          : 'We couldn\'t send your message. Please check your connection and try again.',
+      );
+    } finally {
+      setSending(false);
+    }
   }
 
   if (submitted) {
     return (
       <ContentPageLayout title="Contact" breadcrumbs={[{ label: 'About', href: '/about' }, { label: 'Contact' }]}>
-        <div className="text-center py-10">
+        <div className="text-center py-10" role="status">
           <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="h-7 w-7 text-teal-600" aria-hidden="true" />
           </div>
@@ -287,26 +327,26 @@ export function ContactPage() {
       breadcrumbs={[{ label: 'About', href: '/about' }, { label: 'Contact' }]}
       schema={aboutPageSchema('Contact & Support')}
     >
-      <form onSubmit={handleSubmit} noValidate className="max-w-xl space-y-5">
+      <form onSubmit={handleSubmit} noValidate className="max-w-xl space-y-5" aria-busy={sending}>
         <div>
           <label htmlFor="c-name" className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
-          <input id="c-name" type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+          <input id="c-name" type="text" autoComplete="name" maxLength={100} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
             className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-            aria-describedby={errors.name ? 'c-name-err' : undefined} />
+            aria-invalid={!!errors.name} aria-describedby={errors.name ? 'c-name-err' : undefined} />
           {errors.name && <p id="c-name-err" role="alert" className="mt-1 text-xs text-red-600">{errors.name}</p>}
         </div>
         <div>
           <label htmlFor="c-email" className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-          <input id="c-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+          <input id="c-email" type="email" autoComplete="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
             className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-            aria-describedby={errors.email ? 'c-email-err' : undefined} />
+            aria-invalid={!!errors.email} aria-describedby={errors.email ? 'c-email-err' : undefined} />
           {errors.email && <p id="c-email-err" role="alert" className="mt-1 text-xs text-red-600">{errors.email}</p>}
         </div>
         <div>
           <label htmlFor="c-type" className="block text-sm font-medium text-gray-700 mb-1.5">Message type</label>
           <select id="c-type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
             className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-            aria-describedby={errors.type ? 'c-type-err' : undefined}>
+            aria-invalid={!!errors.type} aria-describedby={errors.type ? 'c-type-err' : undefined}>
             <option value="">Select...</option>
             <option value="incorrect-listing">Incorrect resource listing</option>
             <option value="suggest">Suggest a new resource</option>
@@ -318,13 +358,25 @@ export function ContactPage() {
         </div>
         <div>
           <label htmlFor="c-message" className="block text-sm font-medium text-gray-700 mb-1.5">Message</label>
-          <textarea id="c-message" rows={5} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
+          <textarea id="c-message" rows={5} maxLength={5000} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
             className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
-            aria-describedby={errors.message ? 'c-message-err' : undefined} />
+            aria-invalid={!!errors.message} aria-describedby={errors.message ? 'c-message-err' : undefined} />
           {errors.message && <p id="c-message-err" role="alert" className="mt-1 text-xs text-red-600">{errors.message}</p>}
         </div>
-        <button type="submit" className="px-6 py-2.5 bg-blue-700 text-white font-semibold text-sm rounded-xl hover:bg-blue-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2">
-          Send Message
+        {/* Honeypot for spam bots: hidden from people and assistive tech. */}
+        <div className="hidden" aria-hidden="true">
+          <label htmlFor="c-website">Leave this field empty</label>
+          <input id="c-website" type="text" tabIndex={-1} autoComplete="off" value={form.website}
+            onChange={(e) => setForm({ ...form, website: e.target.value })} />
+        </div>
+        {submitError && (
+          <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{submitError}</p>
+        )}
+        <p className="text-xs text-gray-500">
+          We store your message and email address so we can reply. See <a href="/about/privacy" className="text-blue-700 hover:underline">Privacy &amp; Data</a>.
+        </p>
+        <button type="submit" disabled={sending} className="px-6 py-2.5 bg-blue-700 text-white font-semibold text-sm rounded-xl hover:bg-blue-800 disabled:opacity-60 disabled:cursor-wait transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2">
+          {sending ? 'Sending…' : 'Send Message'}
         </button>
       </form>
     </ContentPageLayout>

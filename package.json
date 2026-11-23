@@ -5,14 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-server && node scripts/prerender.mjs",
+    "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-server && node scripts/prerender.mjs && node scripts/build-chat-knowledge.mjs && npm run build:chat",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc -p tsconfig.server.json",
+    "start": "node server/index.mjs",
+    "dev:server": "node --env-file=.env --watch server/index.mjs",
+    "build:chat": "esbuild server/chat/handler.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=dist-node/chat.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.57.4",
+    "express": "^4.22.3",
     "lucide-react": "^0.344.0",
+    "openai": "^7.62.0",
+    "pg": "^8.23.1",
+    "posthog-js": "^1.454.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-helmet-async": "^2.0.5",
@@ -24,6 +30,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.18",
+    "esbuild": "^0.21.5",
     "eslint": "^9.9.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",
@@ -33,5 +40,8 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.3.0",
     "vite": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
