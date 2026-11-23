@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "espocrm": {
+      "type": "http",
+      "url": "https://crm.lowvisionnavigator.org/api/v1/Mcp/lowvisionnavigator",
+      "headers": {
+        "X-Api-Key": "${ESPOCRM_API_KEY:-proxy-injected}"
+      }
+    }
+  }
+}

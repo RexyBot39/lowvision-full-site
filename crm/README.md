@@ -75,7 +75,16 @@ The script matches organizations by name, so you can re-run it whenever the dire
 
 **The directory has no email addresses.** Before emailing an organization, open its Account in EspoCRM and add a contact email. A named contact (Contacts → linked to the Account) usually beats a generic `info@` address.
 
-## 4. Send the outreach email
+## 4. Use the CRM from Claude Code (MCP)
+
+`.mcp.json` registers EspoCRM's MCP endpoint (`/api/v1/Mcp/lowvisionnavigator`) as the `espocrm` server, so Claude Code sessions on this repo can read and update the CRM directly.
+
+- **API user:** EspoCRM → Administration → API Users, authentication **API Key**. Its role must have the **MCP** scope enabled (otherwise requests fail with `403 No access to 'Mcp' scope`), plus access to Accounts, Contacts, Target Lists and Campaigns.
+- **Claude Code cloud sessions:** the key is saved as a network secret on the repo's cloud environment, and the proxy adds it as `X-Api-Key`. Nothing secret is in the repo.
+- **Claude Code on your computer:** set `ESPOCRM_API_KEY` in your shell before starting Claude Code. Approve the `espocrm` server when asked.
+- `npm run crm:sync` in a cloud session: set `ESPOCRM_API_KEY=proxy-injected`; the proxy replaces it with the real key.
+
+## 5. Send the outreach email
 
 1. **Campaigns → Create Campaign**, type **Email**, target list **"Low Vision Navigator outreach"**.
 2. Create an **Email Template**. EspoCRM adds an unsubscribe link to campaign emails; keep it.
