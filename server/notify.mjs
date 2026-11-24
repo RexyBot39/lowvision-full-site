@@ -153,6 +153,20 @@ export const templates = {
     }),
   }),
 
+  passwordReset: ({ name, link, minutes }) => ({
+    subject: 'Reset your Low Vision Navigator password',
+    ...layout({
+      heading: 'Reset your password',
+      paragraphs: [
+        `Hi ${name},`,
+        `Someone asked to reset the password for your Low Vision Navigator account. Use the button below to choose a new one. The link works once and expires in ${minutes} minutes.`,
+        "If you didn't ask for this, you can ignore this email. Your password won't change.",
+      ],
+      button: { label: 'Choose a new password', href: link },
+      footerNote: 'For your security, Low Vision Navigator will never ask for your password by email.',
+    }),
+  }),
+
   test: ({ to }) => ({
     subject: 'Test email from Low Vision Navigator',
     ...layout({

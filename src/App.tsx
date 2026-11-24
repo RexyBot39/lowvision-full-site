@@ -95,6 +95,8 @@ const FindProfessionalPage = lazyNamed(() => import('./pages/ProfessionalDirecto
 const ProfessionalProfilePage = lazyNamed(() => import('./pages/ProfessionalDirectoryPages'), 'ProfessionalProfilePage');
 const ListYourPracticePage = lazyNamed(() => import('./pages/ProfessionalDirectoryPages'), 'ListYourPracticePage');
 const ManageListingPage = lazyNamed(() => import('./pages/ManageListingPage'), 'ManageListingPage');
+const ForgotPasswordPage = lazyNamed(() => import('./pages/PasswordResetPages'), 'ForgotPasswordPage');
+const ResetPasswordPage = lazyNamed(() => import('./pages/PasswordResetPages'), 'ResetPasswordPage');
 
 function LoadingSpinner() {
   return (
@@ -221,6 +223,8 @@ export default function App() {
             <Route path="/saved-plan" element={<SavedPlanPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/admin" element={<AdminPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />

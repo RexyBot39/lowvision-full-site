@@ -32,6 +32,7 @@ const KIND_LABELS: Record<string, string> = {
   listingRemoved: 'Listing removed',
   adminListingToReview: 'Admin: listing to review',
   adminContactMessage: 'Admin: contact message',
+  passwordReset: 'Password reset',
   test: 'Test',
 };
 const when = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
