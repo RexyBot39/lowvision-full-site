@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { BarChart3, Mail, RefreshCw, ExternalLink, CheckCircle, Inbox, Search, Users } from 'lucide-react';
+import { BarChart3, Mail, RefreshCw, ExternalLink, CheckCircle, Inbox, Search, Users, Briefcase } from 'lucide-react';
 import { Card, Notice, StatTile } from '../components/admin/AdminUI';
 import { fmt, nf, niceTicks, useWidth } from '../components/admin/format';
 import { SeoPanel } from '../components/admin/SeoPanel';
 import { ListingsPanel } from '../components/admin/ListingsPanel';
 import { NotificationsCard } from '../components/admin/NotificationsCard';
+import { CrmPanel } from '../components/admin/CrmPanel';
 import { PageSEO } from '../components/seo/PageSEO';
 import { useAuth } from '../contexts/AuthContext';
 import { api, ApiError } from '../lib/api';
@@ -31,10 +32,10 @@ interface Analytics {
 }
 interface ContactMessage {
   id: number; name: string; email: string; type: string; message: string;
-  status: 'new' | 'handled'; created_at: string;
+  status: 'new' | 'handled'; created_at: string; crm_lead_id?: string | null;
 }
 
-type Tab = 'analytics' | 'seo' | 'listings' | 'messages';
+type Tab = 'analytics' | 'seo' | 'listings' | 'messages' | 'crm';
 const RANGES = [7, 30, 90] as const;
 const TYPE_LABELS: Record<string, string> = {
   'incorrect-listing': 'Incorrect listing',
@@ -53,7 +54,7 @@ export function AdminPage() {
   const { user, loading } = useAuth();
   const [params, setParams] = useSearchParams();
   const tabParam = params.get('tab');
-  const tab: Tab = tabParam === 'messages' || tabParam === 'seo' || tabParam === 'listings' ? tabParam : 'analytics';
+  const tab: Tab = tabParam === 'messages' || tabParam === 'seo' || tabParam === 'listings' || tabParam === 'crm' ? tabParam : 'analytics';
   const [newCount, setNewCount] = useState<number | null>(null);
   const [pendingListings, setPendingListings] = useState<number | null>(null);
 
@@ -101,6 +102,9 @@ export function AdminPage() {
                   </span>
                 ) : null}
               </TabButton>
+              <TabButton id="crm" active={tab === 'crm'} onSelect={() => setTab('crm')}>
+                <Briefcase className="h-4 w-4" aria-hidden="true" /> CRM
+              </TabButton>
               <TabButton id="messages" active={tab === 'messages'} onSelect={() => setTab('messages')}>
                 <Mail className="h-4 w-4" aria-hidden="true" /> Messages
                 {newCount ? (
@@ -114,6 +118,7 @@ export function AdminPage() {
               {tab === 'analytics' && <AnalyticsPanel />}
               {tab === 'seo' && <SeoPanel />}
               {tab === 'listings' && <ListingsPanel onCounts={setPendingListings} />}
+              {tab === 'crm' && <CrmPanel />}
               {tab === 'messages' && (
                 <div className="space-y-6">
                   <NotificationsCard />
@@ -501,14 +506,17 @@ function MessagesPanel({ onCounts }: { onCounts: (n: number | null) => void }) {
   const [counts, setCounts] = useState({ new: 0, handled: 0 });
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState<number | null>(null);
+  const [crmConnected, setCrmConnected] = useState(false);
+  const [savingLead, setSavingLead] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setError('');
     try {
-      const d = await api<{ messages: ContactMessage[]; counts: { new: number; handled: number } }>(
+      const d = await api<{ messages: ContactMessage[]; counts: { new: number; handled: number }; crmConnected?: boolean }>(
         `/admin/contact-messages?status=${filter}&limit=200`,
       );
       setMessages(d.messages);
+      setCrmConnected(!!d.crmConnected);
       setCounts(d.counts);
       onCounts(d.counts.new);
     } catch (err) {
@@ -600,6 +608,30 @@ function MessagesPanel({ onCounts }: { onCounts: (n: number | null) => void }) {
                   )}
                 </button>
                 {m.status === 'handled' && <span className="text-xs text-gray-500">Handled</span>}
+                {crmConnected && (
+                  m.crm_lead_id ? (
+                    <span className="text-xs text-gray-600">Saved to CRM as a lead</span>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={savingLead === m.id}
+                      onClick={async () => {
+                        setSavingLead(m.id);
+                        try {
+                          const r = await api<{ leadId: string }>(`/admin/crm/messages/${m.id}/lead`, { method: 'POST', body: {} });
+                          setMessages((list) => list && list.map((x) => (x.id === m.id ? { ...x, crm_lead_id: r.leadId } : x)));
+                        } catch (err) {
+                          setError(err instanceof ApiError ? err.message : 'Could not save to the CRM.');
+                        } finally {
+                          setSavingLead(null);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-60"
+                    >
+                      <Briefcase className="h-4 w-4" aria-hidden="true" />{savingLead === m.id ? 'Saving…' : 'Save to CRM'}
+                    </button>
+                  )
+                )}
               </div>
             </li>
           ))}

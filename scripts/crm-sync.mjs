@@ -20,6 +20,7 @@
  */
 
 import { build } from 'esbuild';
+import { crmClient, syncDirectory } from '../server/crm.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,112 +64,15 @@ async function loadDirectory() {
   return mod.directorySeedData;
 }
 
-// ── EspoCRM API ────────────────────────────────────────────────────────────
-
-async function espo(method, path, body) {
-  const r = await fetch(`${BASE}/api/v1/${path}`, {
-    method,
-    headers: { 'X-Api-Key': KEY, 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(30_000),
-  });
-  const text = await r.text();
-  if (!r.ok) {
-    const reason = r.headers.get('x-status-reason') || text.slice(0, 300);
-    const err = new Error(`${method} ${path} → ${r.status}${reason ? `: ${reason}` : ''}`);
-    err.status = r.status;
-    throw err;
-  }
-  return text ? JSON.parse(text) : null;
-}
-
-function whereEquals(attribute, value) {
-  const q = new URLSearchParams();
-  q.set('where[0][type]', 'equals');
-  q.set('where[0][attribute]', attribute);
-  q.set('where[0][value]', value);
-  return q.toString();
-}
-
-const ACCOUNT_FIELDS = [
-  'id', 'name', 'website', 'phoneNumber', 'description',
-  'billingAddressStreet', 'billingAddressCity', 'billingAddressState', 'billingAddressPostalCode', 'billingAddressCountry',
-];
-
-async function findAccount(name) {
-  const res = await espo('GET', `Account?select=${ACCOUNT_FIELDS.join(',')}&maxSize=1&${whereEquals('name', name)}`);
-  return res?.list?.[0] ?? null;
-}
-
-async function findOrCreateTargetList() {
-  const res = await espo('GET', `TargetList?select=id,name&maxSize=1&${whereEquals('name', LIST_NAME)}`);
-  if (res?.list?.[0]) return { id: res.list[0].id, created: false };
-  if (!APPLY) return { id: null, created: true };
-  const created = await espo('POST', 'TargetList', {
-    name: LIST_NAME,
-    description: 'Organizations from the Low Vision Navigator directory, for outreach about lowvisionnavigator.org.',
-  });
-  return { id: created.id, created: true };
-}
-
-// ── mapping ────────────────────────────────────────────────────────────────
-
-const countryNames = new Intl.DisplayNames(['en'], { type: 'region' });
-
-function toAccount(r) {
-  const hasStreet = /\d/.test(r.address || '');
-  const lines = [
-    `From the Low Vision Navigator directory (id: ${r.id}).`,
-    r.serviceTypes?.length ? `Services: ${r.serviceTypes.join(', ')}.` : '',
-    r.sourceType ? `Organization type: ${r.sourceType}.` : '',
-    !hasStreet && r.address ? `Location: ${r.address}.` : '',
-  ].filter(Boolean);
-  return {
-    name: r.organizationName,
-    website: r.website || null,
-    phoneNumber: r.phone || null,
-    billingAddressStreet: hasStreet ? r.address : null,
-    billingAddressCity: r.city || null,
-    billingAddressState: r.state || null,
-    billingAddressPostalCode: r.zip || null,
-    billingAddressCountry: r.country ? countryNames.of(r.country) ?? r.country : null,
-    description: lines.join('\n'),
-  };
-}
-
-/** Only fields that are empty in the CRM, so manual edits there are never overwritten. */
-function missingFields(existing, wanted) {
-  const patch = {};
-  for (const [k, v] of Object.entries(wanted)) {
-    if (k === 'name' || v == null || v === '') continue;
-    if (existing[k] == null || existing[k] === '') patch[k] = v;
-  }
-  return patch;
-}
-
-/** EspoCRM can reject phone numbers it can't parse; retry without, keeping the number in the description. */
-async function writeAccount(method, path, data) {
-  try {
-    return await espo(method, path, data);
-  } catch (err) {
-    if (err.status === 400 && data.phoneNumber) {
-      const { phoneNumber, ...rest } = data;
-      rest.description = [rest.description, `Phone: ${phoneNumber}`].filter(Boolean).join('\n');
-      return await espo(method, path, rest);
-    }
-    throw err;
-  }
-}
-
-// ── main ───────────────────────────────────────────────────────────────────
+// ── main ──────────────────────────────────────────────────────────────────
 
 const all = await loadDirectory();
 const orgs = COUNTRIES ? all.filter((r) => COUNTRIES.has(r.country)) : all;
 console.log(`${APPLY ? 'Syncing' : 'Preview (no changes; add --apply to write)'}: ${orgs.length} organizations → ${BASE}`);
 
-let list;
+let result;
 try {
-  list = await findOrCreateTargetList();
+  result = await syncDirectory({ crm: crmClient({ url: BASE, apiKey: KEY }), orgs, apply: APPLY, listName: LIST_NAME });
 } catch (err) {
   const hint =
     err.status === 401 || err.status === 403
@@ -179,50 +83,9 @@ try {
   console.error(`Error: ${hint}`);
   process.exit(1);
 }
-console.log(`Target list "${LIST_NAME}": ${list.created ? (APPLY ? 'created' : 'would be created') : 'found'}`);
 
-const stats = { created: 0, updated: 0, unchanged: 0, linked: 0, failed: 0 };
-const failures = [];
-
-async function syncOne(r) {
-  const wanted = toAccount(r);
-  const existing = await findAccount(wanted.name);
-  let id = existing?.id ?? null;
-  if (!existing) {
-    stats.created++;
-    if (APPLY) id = (await writeAccount('POST', 'Account', wanted)).id;
-  } else {
-    const patch = missingFields(existing, wanted);
-    if (Object.keys(patch).length) {
-      stats.updated++;
-      if (APPLY) await writeAccount('PUT', `Account/${id}`, patch);
-    } else {
-      stats.unchanged++;
-    }
-  }
-  if (APPLY && id && list.id) {
-    // Linking an account that's already on the list is harmless.
-    await espo('POST', `TargetList/${list.id}/accounts`, { id });
-    stats.linked++;
-  }
-}
-
-// A few requests at a time, to be gentle with a small CRM server.
-const queue = [...orgs];
-await Promise.all(
-  Array.from({ length: 4 }, async () => {
-    while (queue.length) {
-      const r = queue.shift();
-      try {
-        await syncOne(r);
-      } catch (err) {
-        stats.failed++;
-        failures.push(`${r.organizationName}: ${err.message}`);
-      }
-    }
-  }),
-);
-
+const { stats, failures } = result;
+console.log(`Target list "${LIST_NAME}": ${stats.listCreated ? (APPLY ? 'created' : 'would be created') : 'found'}`);
 console.log(
   `${APPLY ? '' : 'Would have: '}created ${stats.created}, filled in ${stats.updated}, unchanged ${stats.unchanged}` +
     (APPLY ? `, on target list ${stats.linked}` : '') +

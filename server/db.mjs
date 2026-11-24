@@ -53,6 +53,8 @@ export async function migrate() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS contact_messages_created_at_idx ON contact_messages(created_at DESC);
+    -- Set when an admin saves the message to the CRM as a Lead.
+    ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS crm_lead_id TEXT;
     -- Privacy-friendly analytics: daily counters only. No cookies, IP addresses,
     -- user agents, or per-visit rows are ever stored.
     CREATE TABLE IF NOT EXISTS page_views (

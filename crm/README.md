@@ -104,7 +104,32 @@ The website sends its notifications through the CRM: it creates an Email in Espo
 
 If the CRM or SMTP is briefly down, emails wait in the website's database and are retried after 1, 5, 15, 60 and 180 minutes. Failures show in the card's log with a **Retry** button.
 
-## 6. Send the outreach email
+## 6. Manage the CRM from the website's admin dashboard
+
+`/admin` → **CRM** works with EspoCRM directly through its API (`server/crm-admin.mjs`), using the same `ESPOCRM_URL` and `ESPOCRM_API_KEY` as email notifications:
+
+- **Overview:**
+  - organization, contact, outreach-list and campaign counts
+  - a setup check that names any missing role permission
+  - **Sync the directory into the CRM**, with preview and apply (the same logic as `npm run crm:sync`)
+- **Organizations:** search and page through Accounts, edit email, phone and website, and add contact people. New contacts go on the outreach list automatically.
+- **Campaigns:** recent campaigns with sent, opened, clicked, opted-out and bounced counts.
+- **Messages tab:** each contact-form message has **Save to CRM**, which creates a Lead (source "Web Site").
+
+Everything advanced (templates, mass emails, reports) opens in EspoCRM through the **Open EspoCRM** links.
+
+**API user role for everything** (Administration → Roles, then assign the role to the API user):
+
+| Scope | Access |
+|---|---|
+| Accounts | create, read, edit |
+| Contacts | create, read, edit |
+| Target Lists | create, read, edit |
+| Campaigns | read |
+| Leads | create |
+| Emails | create (for notifications) |
+
+## 7. Send the outreach email
 
 1. **Campaigns → Create Campaign**, type **Email**, target list **"Low Vision Navigator outreach"**.
 2. Create an **Email Template**. EspoCRM adds an unsubscribe link to campaign emails; keep it.
