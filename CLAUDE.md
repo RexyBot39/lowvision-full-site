@@ -6,6 +6,8 @@
 
 ## Project
 - React + Vite site, prerendered at build time and served by a Node/Express server (`server/`) on Railway, with Postgres. See `README.md` for deployment, environment variables, the admin dashboard (PostHog analytics, DataForSEO SEO), and the AI assistant.
+- Adding a page: register its route in **both** `src/App.tsx` and `src/entry-server.tsx` (the prerenderer has its own route table; a route missing there is prerendered empty), add it to `ROUTES` in `scripts/prerender.mjs`, to `public/sitemap.xml`, and to `src/data/siteSearchIndex.ts`.
+- Eye condition content lives in `src/data/eyeConditions.ts`. Treatment facts are dated (`CONDITIONS_LAST_REVIEWED`); when you change medical content, update that date and verify facts against current sources.
 - `npm run typecheck` has 8 known unused-import errors that predate current work; don't treat them as new failures.
 - `crm/` is a separate Railway service (EspoCRM, PHP + MySQL), not part of the website build. `scripts/crm-sync.mjs` loads the directory into it. See `crm/README.md`.
 - The `espocrm` MCP server (`.mcp.json`) is the CRM at crm.lowvisionnavigator.org. In cloud sessions its API key is injected by the environment's proxy; never put a real key in the repo. Sending emails or campaigns from the CRM reaches real organizations: confirm with the user before sending.

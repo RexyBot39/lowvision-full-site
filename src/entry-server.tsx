@@ -49,6 +49,8 @@ import {
   MissionPage, AccessibilityPage, PrivacyPage, ContactPage,
   ClinicalAdvisoryBoardPage, PartnersPage, HowWeReviewResourcesPage,
 } from './pages/AboutPages';
+import { EyeConditionsHubPage, EyeConditionPage, GeneticTestingPage, ClinicalTrialsPage } from './pages/EyeConditionPages';
+import { GlossaryPage } from './pages/GlossaryPage';
 import { FAQPage } from './pages/FAQPage';
 import { AssistantPage } from './pages/AssistantPage';
 import { SavedPlanPage } from './pages/SavedPlanPage';
@@ -69,6 +71,12 @@ export function render(url: string) {
               <Route path="/start-here" element={<StartHerePage />} />
               <Route path="/start-here/what-is-low-vision" element={<StartHereWhatIsPage />} />
               <Route path="/start-here/next-steps" element={<StartHereNextStepsPage />} />
+
+              <Route path="/eye-conditions" element={<EyeConditionsHubPage />} />
+              <Route path="/eye-conditions/genetic-testing" element={<GeneticTestingPage />} />
+              <Route path="/eye-conditions/clinical-trials" element={<ClinicalTrialsPage />} />
+              <Route path="/eye-conditions/:slug" element={<EyeConditionPage />} />
+              <Route path="/glossary" element={<GlossaryPage />} />
 
               <Route path="/resources" element={<ResourcesPage />} />
               <Route path="/resources/us" element={<ResourcesPage />} />
