@@ -91,6 +91,10 @@ const EyeConditionPage = lazyNamed(() => import('./pages/EyeConditionPages'), 'E
 const GeneticTestingPage = lazyNamed(() => import('./pages/EyeConditionPages'), 'GeneticTestingPage');
 const ClinicalTrialsPage = lazyNamed(() => import('./pages/EyeConditionPages'), 'ClinicalTrialsPage');
 const GlossaryPage = lazyNamed(() => import('./pages/GlossaryPage'), 'GlossaryPage');
+const FindProfessionalPage = lazyNamed(() => import('./pages/ProfessionalDirectoryPages'), 'FindProfessionalPage');
+const ProfessionalProfilePage = lazyNamed(() => import('./pages/ProfessionalDirectoryPages'), 'ProfessionalProfilePage');
+const ListYourPracticePage = lazyNamed(() => import('./pages/ProfessionalDirectoryPages'), 'ListYourPracticePage');
+const ManageListingPage = lazyNamed(() => import('./pages/ManageListingPage'), 'ManageListingPage');
 
 function LoadingSpinner() {
   return (
@@ -126,6 +130,12 @@ export default function App() {
             <Route path="/eye-conditions/clinical-trials" element={<ClinicalTrialsPage />} />
             <Route path="/eye-conditions/:slug" element={<EyeConditionPage />} />
             <Route path="/glossary" element={<GlossaryPage />} />
+
+            <Route path="/find-a-professional" element={<FindProfessionalPage />} />
+            <Route path="/find-a-professional/p/:id" element={<ProfessionalProfilePage />} />
+            <Route path="/find-a-professional/:specialty" element={<FindProfessionalPage />} />
+            <Route path="/professionals/list-your-practice" element={<ListYourPracticePage />} />
+            <Route path="/professionals/list-your-practice/manage" element={<ManageListingPage />} />
 
             <Route path="/resources" element={<ResourcesPage />} />
             <Route path="/resources/us" element={<ResourcesPage />} />

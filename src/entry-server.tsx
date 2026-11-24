@@ -51,6 +51,8 @@ import {
 } from './pages/AboutPages';
 import { EyeConditionsHubPage, EyeConditionPage, GeneticTestingPage, ClinicalTrialsPage } from './pages/EyeConditionPages';
 import { GlossaryPage } from './pages/GlossaryPage';
+import { FindProfessionalPage, ProfessionalProfilePage, ListYourPracticePage } from './pages/ProfessionalDirectoryPages';
+import { ManageListingPage } from './pages/ManageListingPage';
 import { FAQPage } from './pages/FAQPage';
 import { AssistantPage } from './pages/AssistantPage';
 import { SavedPlanPage } from './pages/SavedPlanPage';
@@ -77,6 +79,11 @@ export function render(url: string) {
               <Route path="/eye-conditions/clinical-trials" element={<ClinicalTrialsPage />} />
               <Route path="/eye-conditions/:slug" element={<EyeConditionPage />} />
               <Route path="/glossary" element={<GlossaryPage />} />
+              <Route path="/find-a-professional" element={<FindProfessionalPage />} />
+              <Route path="/find-a-professional/p/:id" element={<ProfessionalProfilePage />} />
+              <Route path="/find-a-professional/:specialty" element={<FindProfessionalPage />} />
+              <Route path="/professionals/list-your-practice" element={<ListYourPracticePage />} />
+              <Route path="/professionals/list-your-practice/manage" element={<ManageListingPage />} />
 
               <Route path="/resources" element={<ResourcesPage />} />
               <Route path="/resources/us" element={<ResourcesPage />} />

@@ -1,4 +1,5 @@
 import { eyeConditions } from './eyeConditions';
+import { professions } from './professions';
 
 export interface SiteSearchEntry {
   title: string;
@@ -30,6 +31,29 @@ export const siteSearchIndex: SiteSearchEntry[] = [
     href: '/start-here/next-steps',
     section: 'Start Here',
     keywords: ['next steps', 'what to do', 'first appointment', 'newly diagnosed', 'getting started', 'action plan'],
+  },
+
+  // ── Find a Professional ─────────────────────────────────────────────────
+  {
+    title: 'Find a Professional',
+    description: 'Search low vision optometrists, occupational therapists, O&M specialists, vision rehabilitation therapists, TVIs, counselors and more by profession and location.',
+    href: '/find-a-professional',
+    section: 'Find a Professional',
+    keywords: ['find a professional', 'find a doctor', 'specialist near me', 'provider directory', 'therapist', 'telehealth'],
+  },
+  ...professions.map((p) => ({
+    title: `Find ${p.label}`,
+    description: p.description,
+    href: `/find-a-professional/${p.slug}`,
+    section: 'Find a Professional',
+    keywords: [p.singular, p.credentials, 'near me', 'find'],
+  })),
+  {
+    title: 'List Your Practice (for professionals)',
+    description: 'Vision professionals can add a free, reviewed listing to the Find a Professional directory.',
+    href: '/professionals/list-your-practice',
+    section: 'For Professionals',
+    keywords: ['list my practice', 'join directory', 'add listing', 'provider listing', 'get listed', 'free listing'],
   },
 
   // ── Eye Conditions ───────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ const columns = [
       { label: 'Eye Conditions', href: '/eye-conditions' },
       { label: 'Patient Intake', href: '/intake' },
       { label: 'Find Local Resources', href: '/resources' },
+      { label: 'Find a Professional', href: '/find-a-professional' },
       { label: 'Rehab & Training', href: '/rehab-training' },
       { label: 'Devices & Technology', href: '/devices-technology' },
       { label: 'Community Support', href: '/community-support' },
@@ -18,6 +19,7 @@ const columns = [
     heading: 'Professionals',
     links: [
       { label: 'Professional Hub', href: '/professionals' },
+      { label: 'List Your Practice', href: '/professionals/list-your-practice' },
       { label: 'Diagnostic Resources', href: '/professionals/diagnostic-resources' },
       { label: 'Test Selection Recipes', href: '/professionals/test-selection-recipes' },
       { label: 'Coding & Coverage Guide', href: '/professionals/coding-coverage-guide' },

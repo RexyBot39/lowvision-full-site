@@ -7,6 +7,10 @@
  *   GET   /api/admin/analytics?days=30       PostHog data, or the built-in counter
  *   GET   /api/admin/contact-messages?status=new|handled|all&limit=100
  *   PATCH /api/admin/contact-messages/:id    { status: "new" | "handled" }
+ *   GET   /api/admin/listings?status=pending|approved|rejected|removed|all
+ *   POST  /api/admin/listings/:id/approve    publish the submitted version
+ *   POST  /api/admin/listings/:id/reject     { note } (shown to the professional)
+ *   POST  /api/admin/listings/:id/remove     { note } take it off the public site
  *   GET   /api/admin/seo                     latest DataForSEO snapshot + history
  *   POST  /api/admin/seo/refresh             fetch a new snapshot (costs money; 10-min cooldown)
  *   GET   /api/admin/seo/snapshots/:id/raw   download a snapshot's raw DataForSEO responses
@@ -249,6 +253,53 @@ adminRouter.get('/seo/snapshots/:id/raw', wrap(async (req, res) => {
   res.set('Content-Disposition', `attachment; filename="dataforseo-${rows[0].target}-${day}-${id}.json"`);
   res.type('application/json').send(JSON.stringify(rows[0], null, 2));
 }));
+
+
+// ── professional directory moderation ──────────────────────────────────────
+
+const LISTING_STATUSES = ['pending', 'approved', 'rejected', 'removed'];
+
+adminRouter.get('/listings', wrap(async (req, res) => {
+  if (!db) return res.status(503).json({ error: 'Database not configured' });
+  const status = LISTING_STATUSES.includes(req.query.status) ? req.query.status : null;
+  const [{ rows }, counts] = await Promise.all([
+    db.query(
+      `SELECT l.id, l.status, l.data, l.published, l.owner_hidden, l.review_note, l.submitted_at, l.reviewed_at, l.created_at,
+              u.email AS account_email, u.name AS account_name
+       FROM professional_listings l JOIN users u ON u.id = l.user_id
+       WHERE ($1::text IS NULL OR l.status = $1)
+       ORDER BY (l.status = 'pending') DESC, l.submitted_at DESC LIMIT 500`,
+      [status],
+    ),
+    db.query(`SELECT status, count(*)::int AS n FROM professional_listings GROUP BY status`),
+  ]);
+  res.json({
+    listings: rows,
+    counts: Object.fromEntries(LISTING_STATUSES.map((s) => [s, counts.rows.find((r) => r.status === s)?.n ?? 0])),
+  });
+}));
+
+async function moderate(req, res, action) {
+  if (!db) return res.status(503).json({ error: 'Database not configured' });
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' });
+  const note = String(req.body?.note ?? '').trim().slice(0, 1000);
+  if ((action === 'reject' || action === 'remove') && !note) {
+    return res.status(400).json({ error: 'Add a short note explaining why. The professional will see it.' });
+  }
+  const sql = {
+    approve: `UPDATE professional_listings SET status = 'approved', published = data, review_note = NULL, reviewed_at = now() WHERE id = $1 RETURNING id, status`,
+    reject: `UPDATE professional_listings SET status = 'rejected', review_note = $2, reviewed_at = now() WHERE id = $1 RETURNING id, status`,
+    remove: `UPDATE professional_listings SET status = 'removed', published = NULL, review_note = $2, reviewed_at = now() WHERE id = $1 RETURNING id, status`,
+  }[action];
+  const { rows } = await db.query(sql, action === 'approve' ? [id] : [id, note]);
+  if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+  res.json({ ok: true, listing: rows[0] });
+}
+
+adminRouter.post('/listings/:id/approve', wrap((req, res) => moderate(req, res, 'approve')));
+adminRouter.post('/listings/:id/reject', wrap((req, res) => moderate(req, res, 'reject')));
+adminRouter.post('/listings/:id/remove', wrap((req, res) => moderate(req, res, 'remove')));
 
 adminRouter.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 

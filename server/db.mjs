@@ -67,6 +67,22 @@ export async function migrate() {
       errors        JSONB NOT NULL DEFAULT '{}'
     );
     CREATE INDEX IF NOT EXISTS seo_snapshots_target_created_idx ON seo_snapshots(target, created_at DESC);
+    -- Professional directory (server/directory-api.mjs). One listing per
+    -- account. "data" is the latest submission; "published" is the version
+    -- an admin approved, which is what the public sees.
+    CREATE TABLE IF NOT EXISTS professional_listings (
+      id            SERIAL PRIMARY KEY,
+      user_id       INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      status        TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'removed')),
+      data          JSONB NOT NULL,
+      published     JSONB,
+      owner_hidden  BOOLEAN NOT NULL DEFAULT false,
+      review_note   TEXT,
+      submitted_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+      reviewed_at   TIMESTAMPTZ,
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS professional_listings_status_idx ON professional_listings(status);
   `);
   await db.query('DELETE FROM sessions WHERE expires_at < now()');
 }

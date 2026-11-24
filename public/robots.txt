@@ -8,5 +8,6 @@ Disallow: /intake/follow-up
 Disallow: /intake/results/printable-plan
 Disallow: /saved-plan
 Disallow: /admin
+Disallow: /professionals/list-your-practice/manage
 
 Sitemap: https://lowvisionnavigator.org/sitemap.xml
