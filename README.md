@@ -102,6 +102,16 @@ variables are optional (see `.env.example`).
 
   People who signed up with Google can add a password later with "Forgot password?".
 
+## CRM in the admin dashboard
+
+`/admin` → **CRM** manages EspoCRM without leaving the site:
+- the overview and setup check
+- the directory → CRM sync, with preview
+- organizations and contacts
+- campaign results
+
+Contact messages can also be saved to the CRM as leads. See [`crm/README.md`](crm/README.md#6-manage-the-crm-from-the-websites-admin-dashboard).
+
 ## Email notifications
 
 Professionals get emails about their directory listing (received, approved, changes needed, removed). Admins get emails for listings to review and new contact messages. They're sent **through EspoCRM** (`server/notify.mjs`), queued in the `email_outbox` table and retried if the CRM is unavailable. Setup and status are in `/admin` → Messages; the steps are in [`crm/README.md`](crm/README.md#5-website-email-notifications).

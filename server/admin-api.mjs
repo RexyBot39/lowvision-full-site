@@ -14,6 +14,7 @@
  *   GET   /api/admin/notifications           email setup check, counts, recent emails
  *   POST  /api/admin/notifications/test      send a test email to the signed-in admin
  *   POST  /api/admin/notifications/:id/retry retry a failed email
+ *   /api/admin/crm/*                         CRM tab (see crm-admin.mjs)
  *   GET   /api/admin/seo                     latest DataForSEO snapshot + history
  *   POST  /api/admin/seo/refresh             fetch a new snapshot (costs money; 10-min cooldown)
  *   GET   /api/admin/seo/snapshots/:id/raw   download a snapshot's raw DataForSEO responses
@@ -24,6 +25,8 @@ import { timingSafeEqual, createHash } from 'node:crypto';
 import { db } from './db.mjs';
 import { loadUser, isAdminEmail } from './api.mjs';
 import { notify, notifyConfig, notifyEnabled, checkNotifySetup, processOutbox } from './notify.mjs';
+import { crmAdminRouter } from './crm-admin.mjs';
+import { crmEnabled } from './crm.mjs';
 import { posthog, posthogOverview, reportingEnabled, collectionEnabled, TRACKED_EVENTS } from './posthog.mjs';
 import {
   seoConfig, seoEnabled, refreshSeo, seoRefreshRunning, compareKeywords, pagesFromKeywords, MANUAL_COOLDOWN_MS,
@@ -124,14 +127,14 @@ adminRouter.get('/contact-messages', wrap(async (req, res) => {
   const status = ['new', 'handled'].includes(req.query.status) ? req.query.status : null;
   const [{ rows }, counts] = await Promise.all([
     db.query(
-      `SELECT id, name, email, type, message, status, created_at FROM contact_messages
+      `SELECT id, name, email, type, message, status, created_at, crm_lead_id FROM contact_messages
        WHERE ($1::text IS NULL OR status = $1) ORDER BY created_at DESC LIMIT $2`,
       [status, limit],
     ),
     db.query(`SELECT status, count(*)::int AS n FROM contact_messages GROUP BY status`),
   ]);
   const byStatus = Object.fromEntries(counts.rows.map((r) => [r.status, r.n]));
-  res.json({ messages: rows, counts: { new: byStatus.new ?? 0, handled: byStatus.handled ?? 0 } });
+  res.json({ messages: rows, counts: { new: byStatus.new ?? 0, handled: byStatus.handled ?? 0 }, crmConnected: crmEnabled() });
 }));
 
 adminRouter.patch('/contact-messages/:id', wrap(async (req, res) => {
@@ -368,6 +371,9 @@ adminRouter.post('/notifications/:id/retry', wrap(async (req, res) => {
   await processOutbox();
   res.json({ ok: true });
 }));
+
+// CRM tab (EspoCRM through its API; see crm-admin.mjs).
+adminRouter.use('/crm', crmAdminRouter);
 
 adminRouter.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 

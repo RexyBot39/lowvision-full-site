@@ -28,8 +28,9 @@ function PageviewTracker() {
   return null;
 }
 
-// Short account pages where the floating assistant button would cover the main button on phones.
-const NO_CHAT_LAUNCHER = ['/login', '/forgot-password', '/reset-password'];
+// Pages where the floating assistant button would cover the main controls on phones
+// (short account pages) or isn't useful (the admin dashboard).
+const NO_CHAT_LAUNCHER = ['/login', '/forgot-password', '/reset-password', '/admin'];
 
 export function Layout({ children }: LayoutProps) {
   const { pathname } = useLocation();
