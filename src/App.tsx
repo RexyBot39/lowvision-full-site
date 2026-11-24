@@ -86,6 +86,11 @@ const AssistantPage = lazyNamed(() => import('./pages/AssistantPage'), 'Assistan
 const SavedPlanPage = lazyNamed(() => import('./pages/SavedPlanPage'), 'SavedPlanPage');
 const LoginPage = lazyNamed(() => import('./pages/LoginPage'), 'LoginPage');
 const AdminPage = lazyNamed(() => import('./pages/AdminPage'), 'AdminPage');
+const EyeConditionsHubPage = lazyNamed(() => import('./pages/EyeConditionPages'), 'EyeConditionsHubPage');
+const EyeConditionPage = lazyNamed(() => import('./pages/EyeConditionPages'), 'EyeConditionPage');
+const GeneticTestingPage = lazyNamed(() => import('./pages/EyeConditionPages'), 'GeneticTestingPage');
+const ClinicalTrialsPage = lazyNamed(() => import('./pages/EyeConditionPages'), 'ClinicalTrialsPage');
+const GlossaryPage = lazyNamed(() => import('./pages/GlossaryPage'), 'GlossaryPage');
 
 function LoadingSpinner() {
   return (
@@ -115,6 +120,12 @@ export default function App() {
             <Route path="/start-here" element={<StartHerePage />} />
             <Route path="/start-here/what-is-low-vision" element={<StartHereWhatIsPage />} />
             <Route path="/start-here/next-steps" element={<StartHereNextStepsPage />} />
+
+            <Route path="/eye-conditions" element={<EyeConditionsHubPage />} />
+            <Route path="/eye-conditions/genetic-testing" element={<GeneticTestingPage />} />
+            <Route path="/eye-conditions/clinical-trials" element={<ClinicalTrialsPage />} />
+            <Route path="/eye-conditions/:slug" element={<EyeConditionPage />} />
+            <Route path="/glossary" element={<GlossaryPage />} />
 
             <Route path="/resources" element={<ResourcesPage />} />
             <Route path="/resources/us" element={<ResourcesPage />} />

@@ -44,6 +44,39 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    key: 'conditions',
+    label: 'Eye Conditions',
+    columns: [
+      {
+        heading: 'Common Causes',
+        links: [
+          { label: 'Macular Degeneration (AMD)', href: '/eye-conditions/macular-degeneration' },
+          { label: 'Glaucoma', href: '/eye-conditions/glaucoma' },
+          { label: 'Diabetic Eye Disease', href: '/eye-conditions/diabetic-eye-disease' },
+          { label: 'Cortical Visual Impairment (CVI)', href: '/eye-conditions/cortical-visual-impairment' },
+        ],
+      },
+      {
+        heading: 'Inherited Retinal Diseases',
+        links: [
+          { label: 'Retinitis Pigmentosa (RP)', href: '/eye-conditions/retinitis-pigmentosa' },
+          { label: 'Stargardt Disease', href: '/eye-conditions/stargardt-disease' },
+          { label: 'Usher Syndrome', href: '/eye-conditions/usher-syndrome' },
+          { label: 'Leber Congenital Amaurosis', href: '/eye-conditions/leber-congenital-amaurosis' },
+          { label: 'All Eye Conditions', href: '/eye-conditions' },
+        ],
+      },
+      {
+        heading: 'Research & Genetics',
+        links: [
+          { label: 'Genetic Testing', href: '/eye-conditions/genetic-testing' },
+          { label: 'Clinical Trials & Research', href: '/eye-conditions/clinical-trials' },
+          { label: 'Glossary of Terms', href: '/glossary' },
+        ],
+      },
+    ],
+  },
+  {
     key: 'resources',
     label: 'Find Local Resources',
     columns: [
@@ -241,10 +274,10 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm" ref={menuRef}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl 2xl:max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20 md:h-24 xl:h-28">
             <Link to="/" className="flex items-center shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 rounded-md" aria-label="Low Vision Navigator Home">
-              <img src="/logo.png" alt="Low Vision Navigator" width={864} height={240} className="h-12 sm:h-14 md:h-16 w-auto" />
+              <img src="/logo.png" alt="Low Vision Navigator" width={864} height={240} className="h-12 sm:h-14 md:h-16 xl:h-12 2xl:h-16 w-auto" />
             </Link>
 
             {/* Full menu only from 1280px: below that the seven sections don't fit and the page scrolled sideways. */}
@@ -255,16 +288,16 @@ export function Header() {
                     aria-expanded={openMenu === section.key}
                     aria-haspopup="true"
                     onClick={() => setOpenMenu(openMenu === section.key ? null : section.key)}
-                    className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-700 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
+                    className="flex items-center gap-0.5 px-2 2xl:gap-1 2xl:px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-700 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
                   >
                     {section.label}
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${openMenu === section.key ? 'rotate-180' : ''}`} aria-hidden="true" />
+                    <ChevronDown className={`h-3 w-3 shrink-0 transition-transform ${openMenu === section.key ? 'rotate-180' : ''}`} aria-hidden="true" />
                   </button>
                 </div>
               ))}
             </nav>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
               <Link
                 to="/search"
                 aria-label="Search"
@@ -281,7 +314,7 @@ export function Header() {
               </Link>
               <Link
                 to="/intake/start"
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-blue-700 text-white text-sm font-semibold rounded-lg hover:bg-blue-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
+                className="hidden sm:inline-flex items-center gap-1.5 px-4 xl:px-3 2xl:px-4 py-2 bg-blue-700 text-white text-sm font-semibold rounded-lg hover:bg-blue-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
               >
                 Start Intake
               </Link>
@@ -335,7 +368,7 @@ export function Header() {
               ) : (
                 <Link
                   to="/login"
-                  className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-4 xl:px-3 2xl:px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
                 >
                   Sign In
                 </Link>
@@ -355,7 +388,7 @@ export function Header() {
 
         {openMenu && (
           <div className="hidden xl:block absolute left-0 right-0 top-full bg-white border-b border-gray-200 shadow-xl z-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="max-w-7xl 2xl:max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8 py-6">
               {navSections.filter((s) => s.key === openMenu).map((section) => (
                 <div key={section.key} className="grid grid-cols-3 gap-8">
                   {section.columns.map((col, ci) => (

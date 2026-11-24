@@ -12,11 +12,11 @@ const audiencePaths = [
 ];
 
 const conditions = [
-  { name: 'Age-Related Macular Degeneration (AMD)', desc: 'Central vision loss affecting reading, faces, and fine detail. Most common cause of low vision in adults over 60.' },
-  { name: 'Glaucoma', desc: 'Progressive peripheral field loss that can narrow to tunnel vision over time. Often silent in early stages.' },
-  { name: 'Diabetic Retinopathy', desc: 'Vision loss from damaged retinal blood vessels. Can cause fluctuating, scattered, or severe vision loss.' },
-  { name: 'Retinitis Pigmentosa (RP)', desc: 'Progressive peripheral and night vision loss. Often begins in childhood or young adulthood.' },
-  { name: 'Cortical Visual Impairment (CVI)', desc: 'Vision difficulty caused by brain processing differences rather than eye structure. Common in children with neurological conditions.' },
+  { name: 'Age-Related Macular Degeneration (AMD)', href: '/eye-conditions/macular-degeneration', desc: 'Central vision loss affecting reading, faces, and fine detail. Most common cause of low vision in adults over 60.' },
+  { name: 'Glaucoma', href: '/eye-conditions/glaucoma', desc: 'Progressive peripheral field loss that can narrow to tunnel vision over time. Often silent in early stages.' },
+  { name: 'Diabetic Retinopathy', href: '/eye-conditions/diabetic-eye-disease', desc: 'Vision loss from damaged retinal blood vessels. Can cause fluctuating, scattered, or severe vision loss.' },
+  { name: 'Retinitis Pigmentosa (RP)', href: '/eye-conditions/retinitis-pigmentosa', desc: 'Progressive peripheral and night vision loss. Often begins in childhood or young adulthood.' },
+  { name: 'Cortical Visual Impairment (CVI)', href: '/eye-conditions/cortical-visual-impairment', desc: 'Vision difficulty caused by brain processing differences rather than eye structure. Common in children with neurological conditions.' },
 ];
 
 const nextSteps = [
@@ -100,13 +100,19 @@ export function StartHerePage() {
         <section aria-labelledby="conditions-heading">
           <h2 id="conditions-heading" className="text-2xl font-bold text-gray-900 mb-6">Common conditions</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {conditions.map(({ name, desc }) => (
-              <div key={name} className="bg-white rounded-xl border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-1.5">{name}</h3>
+            {conditions.map(({ name, desc, href }) => (
+              <Link key={name} to={href} className="group block bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-400 hover:shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700">
+                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-800 mb-1.5">{name}</h3>
                 <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
-              </div>
+                <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-blue-700">Read the guide <ArrowRight className="h-3 w-3" aria-hidden="true" /></span>
+              </Link>
             ))}
           </div>
+          <p className="mt-4 text-sm">
+            <Link to="/eye-conditions" className="font-medium text-blue-700 hover:underline">See all eye conditions</Link>, including Stargardt disease, Usher syndrome and LCA, plus guides to{' '}
+            <Link to="/eye-conditions/genetic-testing" className="font-medium text-blue-700 hover:underline">genetic testing</Link> and{' '}
+            <Link to="/eye-conditions/clinical-trials" className="font-medium text-blue-700 hover:underline">clinical trials</Link>.
+          </p>
         </section>
 
         <section aria-labelledby="nextsteps-heading">

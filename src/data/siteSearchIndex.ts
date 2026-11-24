@@ -1,3 +1,5 @@
+import { eyeConditions } from './eyeConditions';
+
 export interface SiteSearchEntry {
   title: string;
   description: string;
@@ -28,6 +30,43 @@ export const siteSearchIndex: SiteSearchEntry[] = [
     href: '/start-here/next-steps',
     section: 'Start Here',
     keywords: ['next steps', 'what to do', 'first appointment', 'newly diagnosed', 'getting started', 'action plan'],
+  },
+
+  // ── Eye Conditions ───────────────────────────────────────────────────────
+  {
+    title: 'Eye Conditions That Cause Low Vision',
+    description: 'Plain-language guides to AMD, glaucoma, diabetic eye disease, CVI and inherited retinal diseases, with treatments and practical help.',
+    href: '/eye-conditions',
+    section: 'Eye Conditions',
+    keywords: ['eye condition', 'eye disease', 'diagnosis', 'diseases', 'causes of low vision', 'inherited retinal disease', 'IRD'],
+  },
+  ...eyeConditions.map((c) => ({
+    title: c.name,
+    description: c.summary,
+    href: `/eye-conditions/${c.slug}`,
+    section: 'Eye Conditions',
+    keywords: [c.shortName, ...(c.alternateNames ?? []), 'symptoms', 'treatment', 'causes'],
+  })),
+  {
+    title: 'Genetic Testing for Inherited Retinal Diseases',
+    description: 'Why a genetic diagnosis matters, no-cost testing through the My Retina Tracker program, genetic counseling, understanding results, and GINA protections.',
+    href: '/eye-conditions/genetic-testing',
+    section: 'Eye Conditions',
+    keywords: ['genetic testing', 'gene', 'DNA', 'genetic counselor', 'inherited', 'My Retina Tracker', 'GINA', 'VUS', 'free genetic test'],
+  },
+  {
+    title: 'Clinical Trials & Research',
+    description: 'Approved retinal treatments, how clinical trials work, finding trials on ClinicalTrials.gov, questions to ask, and how to avoid unproven stem cell clinics.',
+    href: '/eye-conditions/clinical-trials',
+    section: 'Eye Conditions',
+    keywords: ['clinical trial', 'research', 'gene therapy', 'Luxturna', 'Syfovre', 'Izervay', 'stem cell', 'cure', 'new treatment', 'ClinicalTrials.gov'],
+  },
+  {
+    title: 'Glossary of Low Vision Terms',
+    description: 'Plain-language definitions: acuity, legal blindness, scotoma, eccentric viewing, O&M, TVI, CVRT, anti-VEGF, IRD and more.',
+    href: '/glossary',
+    section: 'Eye Conditions',
+    keywords: ['glossary', 'definitions', 'terms', 'what does it mean', 'acronyms', 'vocabulary'],
   },
 
   // ── Intake / Assessment ───────────────────────────────────────────────────

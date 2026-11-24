@@ -9,6 +9,20 @@
   <url><loc>https://lowvisionnavigator.org/start-here/what-is-low-vision</loc><lastmod>2026-03-01</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
   <url><loc>https://lowvisionnavigator.org/start-here/next-steps</loc><lastmod>2026-03-01</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
 
+  <!-- Eye Conditions -->
+  <url><loc>https://lowvisionnavigator.org/eye-conditions</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://lowvisionnavigator.org/eye-conditions/macular-degeneration</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lowvisionnavigator.org/eye-conditions/glaucoma</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lowvisionnavigator.org/eye-conditions/diabetic-eye-disease</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lowvisionnavigator.org/eye-conditions/cortical-visual-impairment</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lowvisionnavigator.org/eye-conditions/retinitis-pigmentosa</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lowvisionnavigator.org/eye-conditions/stargardt-disease</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lowvisionnavigator.org/eye-conditions/usher-syndrome</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lowvisionnavigator.org/eye-conditions/leber-congenital-amaurosis</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lowvisionnavigator.org/eye-conditions/genetic-testing</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lowvisionnavigator.org/eye-conditions/clinical-trials</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lowvisionnavigator.org/glossary</loc><lastmod>2026-11-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+
   <!-- Intake -->
   <url><loc>https://lowvisionnavigator.org/intake</loc><lastmod>2026-03-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lowvisionnavigator.org/intake/start</loc><lastmod>2026-03-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>

@@ -5,11 +5,13 @@ const columns = [
     heading: 'Patients & Families',
     links: [
       { label: 'Start Here', href: '/start-here' },
+      { label: 'Eye Conditions', href: '/eye-conditions' },
       { label: 'Patient Intake', href: '/intake' },
       { label: 'Find Local Resources', href: '/resources' },
       { label: 'Rehab & Training', href: '/rehab-training' },
       { label: 'Devices & Technology', href: '/devices-technology' },
       { label: 'Community Support', href: '/community-support' },
+      { label: 'Glossary', href: '/glossary' },
     ],
   },
   {
