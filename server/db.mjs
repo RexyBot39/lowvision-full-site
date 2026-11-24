@@ -21,6 +21,16 @@ export async function migrate() {
       password_hash TEXT NOT NULL,
       created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    -- Sign in with Google (server/api.mjs): Google's stable account id.
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT UNIQUE;
+    -- Password reset links: only a hash of the token is stored; single use, 1 hour.
+    CREATE TABLE IF NOT EXISTS password_resets (
+      token_hash TEXT PRIMARY KEY,
+      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at    TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
     CREATE TABLE IF NOT EXISTS sessions (
       token_hash TEXT PRIMARY KEY,
       user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -83,6 +93,25 @@ export async function migrate() {
       created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS professional_listings_status_idx ON professional_listings(status);
+    -- Email notifications waiting to be sent through EspoCRM (server/notify.mjs).
+    CREATE TABLE IF NOT EXISTS email_outbox (
+      id              SERIAL PRIMARY KEY,
+      kind            TEXT NOT NULL,
+      to_addresses    TEXT NOT NULL,
+      reply_to        TEXT,
+      subject         TEXT NOT NULL,
+      html            TEXT NOT NULL,
+      text_body       TEXT NOT NULL,
+      status          TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed')),
+      attempts        INTEGER NOT NULL DEFAULT 0,
+      last_error      TEXT,
+      next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      crm_email_id    TEXT,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+      sent_at         TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS email_outbox_due_idx ON email_outbox(status, next_attempt_at);
   `);
   await db.query('DELETE FROM sessions WHERE expires_at < now()');
+  await db.query("DELETE FROM password_resets WHERE expires_at < now() - interval '1 day'");
 }

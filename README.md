@@ -92,6 +92,20 @@ Setup: set `DATAFORSEO_LOGIN` and `DATAFORSEO_PASSWORD` (the API credentials
 from DataForSEO's API Access page) on the web service. The other `SEO_*`
 variables are optional (see `.env.example`).
 
+## Accounts: forgot password and Sign in with Google
+
+- **Forgot password:** `/forgot-password` emails a single-use reset link that expires in 1 hour, sent through the CRM like the other notifications. It needs [email notifications](#email-notifications) to be on. Only a hash of the token is stored, the page never reveals whether an account exists, and a reset signs the person out on their other devices.
+- **Sign in with Google:** a "Continue with Google" button on `/login`, shown only when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set. It signs into the account with the same email if there is one (Google must have verified that email), otherwise it creates one. Setup:
+  1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), configure the **OAuth consent screen** (External; app name, support email, the site's domain), then **Create credentials → OAuth client ID → Web application**.
+  2. Add the authorized redirect URI `https://lowvisionnavigator.org/api/auth/google/callback`.
+  3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` on the website service and redeploy.
+
+  People who signed up with Google can add a password later with "Forgot password?".
+
+## Email notifications
+
+Professionals get emails about their directory listing (received, approved, changes needed, removed). Admins get emails for listings to review and new contact messages. They're sent **through EspoCRM** (`server/notify.mjs`), queued in the `email_outbox` table and retried if the CRM is unavailable. Setup and status are in `/admin` → Messages; the steps are in [`crm/README.md`](crm/README.md#5-website-email-notifications).
+
 ## Contact form
 
 `POST /api/contact` (`server/public-api.mjs`) saves messages to the

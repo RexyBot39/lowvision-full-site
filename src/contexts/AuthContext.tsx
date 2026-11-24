@@ -6,6 +6,10 @@ interface AuthContextValue {
   user: ApiUser | null;
   loading: boolean;
   authConfigured: boolean;
+  /** "Continue with Google" is set up on the server. */
+  googleEnabled: boolean;
+  /** Password reset emails can be sent (email notifications are on). */
+  passwordResetByEmail: boolean;
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
   signUpWithEmail: (email: string, password: string, displayName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -18,6 +22,8 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: false,
   authConfigured: true,
+  googleEnabled: false,
+  passwordResetByEmail: false,
   signInWithEmail: noop,
   signUpWithEmail: noop,
   signOut: async () => {},
@@ -30,11 +36,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<ApiUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [authConfigured, setAuthConfigured] = useState(true);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [passwordResetByEmail, setPasswordResetByEmail] = useState(false);
 
   useEffect(() => {
-    api<{ configured: boolean; user: ApiUser | null }>('/auth/me')
-      .then(({ configured, user: me }) => {
+    api<{ configured: boolean; user: ApiUser | null; providers?: { google?: boolean }; passwordResetByEmail?: boolean }>('/auth/me')
+      .then(({ configured, user: me, providers, passwordResetByEmail: resetOn }) => {
         setAuthConfigured(configured);
+        setGoogleEnabled(!!providers?.google);
+        setPasswordResetByEmail(!!resetOn);
         setUser(me);
         if (me) void syncOnSignIn();
       })
@@ -78,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, authConfigured, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, loading, authConfigured, googleEnabled, passwordResetByEmail, signInWithEmail, signUpWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -28,23 +28,29 @@ function PageviewTracker() {
   return null;
 }
 
+// Short account pages where the floating assistant button would cover the main button on phones.
+const NO_CHAT_LAUNCHER = ['/login', '/forgot-password', '/reset-password'];
+
 export function Layout({ children }: LayoutProps) {
+  const { pathname } = useLocation();
   return (
     <div className="flex flex-col min-h-screen">
       <ScrollToTop />
       <PageviewTracker />
       {/* Skip link must be the very first focusable element */}
       <a href="#main-content" className="skip-link">Skip to main content</a>
-      <a
-        href="/assistant"
-        className="skip-link"
-        onClick={(e) => {
-          e.preventDefault();
-          openChat();
-        }}
-      >
-        Skip to the assistant
-      </a>
+      {!NO_CHAT_LAUNCHER.includes(pathname) && (
+        <a
+          href="/assistant"
+          className="skip-link"
+          onClick={(e) => {
+            e.preventDefault();
+            openChat();
+          }}
+        >
+          Skip to the assistant
+        </a>
+      )}
       {/* Accessibility controls visible on every page — no need to find a settings page */}
       <AccessibilityBar />
       <Header />
@@ -52,7 +58,7 @@ export function Layout({ children }: LayoutProps) {
         {children}
       </main>
       <Footer />
-      <ChatLauncher />
+      {!NO_CHAT_LAUNCHER.includes(pathname) && <ChatLauncher />}
     </div>
   );
 }

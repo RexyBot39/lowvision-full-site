@@ -53,6 +53,7 @@ import { EyeConditionsHubPage, EyeConditionPage, GeneticTestingPage, ClinicalTri
 import { GlossaryPage } from './pages/GlossaryPage';
 import { FindProfessionalPage, ProfessionalProfilePage, ListYourPracticePage } from './pages/ProfessionalDirectoryPages';
 import { ManageListingPage } from './pages/ManageListingPage';
+import { ForgotPasswordPage, ResetPasswordPage } from './pages/PasswordResetPages';
 import { FAQPage } from './pages/FAQPage';
 import { AssistantPage } from './pages/AssistantPage';
 import { SavedPlanPage } from './pages/SavedPlanPage';
@@ -84,6 +85,8 @@ export function render(url: string) {
               <Route path="/find-a-professional/:specialty" element={<FindProfessionalPage />} />
               <Route path="/professionals/list-your-practice" element={<ListYourPracticePage />} />
               <Route path="/professionals/list-your-practice/manage" element={<ManageListingPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               <Route path="/resources" element={<ResourcesPage />} />
               <Route path="/resources/us" element={<ResourcesPage />} />

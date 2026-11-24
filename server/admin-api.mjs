@@ -11,6 +11,9 @@
  *   POST  /api/admin/listings/:id/approve    publish the submitted version
  *   POST  /api/admin/listings/:id/reject     { note } (shown to the professional)
  *   POST  /api/admin/listings/:id/remove     { note } take it off the public site
+ *   GET   /api/admin/notifications           email setup check, counts, recent emails
+ *   POST  /api/admin/notifications/test      send a test email to the signed-in admin
+ *   POST  /api/admin/notifications/:id/retry retry a failed email
  *   GET   /api/admin/seo                     latest DataForSEO snapshot + history
  *   POST  /api/admin/seo/refresh             fetch a new snapshot (costs money; 10-min cooldown)
  *   GET   /api/admin/seo/snapshots/:id/raw   download a snapshot's raw DataForSEO responses
@@ -20,6 +23,7 @@ import express from 'express';
 import { timingSafeEqual, createHash } from 'node:crypto';
 import { db } from './db.mjs';
 import { loadUser, isAdminEmail } from './api.mjs';
+import { notify, notifyConfig, notifyEnabled, checkNotifySetup, processOutbox } from './notify.mjs';
 import { posthog, posthogOverview, reportingEnabled, collectionEnabled, TRACKED_EVENTS } from './posthog.mjs';
 import {
   seoConfig, seoEnabled, refreshSeo, seoRefreshRunning, compareKeywords, pagesFromKeywords, MANUAL_COOLDOWN_MS,
@@ -295,11 +299,75 @@ async function moderate(req, res, action) {
   const { rows } = await db.query(sql, action === 'approve' ? [id] : [id, note]);
   if (!rows[0]) return res.status(404).json({ error: 'Not found' });
   res.json({ ok: true, listing: rows[0] });
+
+  // Tell the professional.
+  const { rows: info } = await db.query(
+    `SELECT u.email, l.data->>'fullName' AS name, l.published IS NOT NULL AS has_published
+     FROM professional_listings l JOIN users u ON u.id = l.user_id WHERE l.id = $1`,
+    [id],
+  );
+  const who = info[0];
+  if (who) {
+    if (action === 'approve') void notify('listingApproved', who.email, { name: who.name, id });
+    if (action === 'reject') void notify('listingChangesRequested', who.email, { name: who.name, note, hasPublished: who.has_published });
+    if (action === 'remove') void notify('listingRemoved', who.email, { name: who.name, note });
+  }
 }
 
 adminRouter.post('/listings/:id/approve', wrap((req, res) => moderate(req, res, 'approve')));
 adminRouter.post('/listings/:id/reject', wrap((req, res) => moderate(req, res, 'reject')));
 adminRouter.post('/listings/:id/remove', wrap((req, res) => moderate(req, res, 'remove')));
+
+
+// ── email notifications (sent through EspoCRM) ─────────────────────────────
+
+adminRouter.get('/notifications', wrap(async (req, res) => {
+  const setup = await checkNotifySetup({ fresh: req.query.fresh === '1' });
+  let counts = { pending: 0, sent: 0, failed: 0 };
+  let recent = [];
+  if (db) {
+    const [c, r] = await Promise.all([
+      db.query(`SELECT status, count(*)::int AS n FROM email_outbox WHERE created_at > now() - interval '30 days' GROUP BY status`),
+      db.query(`SELECT id, kind, to_addresses, subject, status, attempts, last_error, created_at, sent_at, next_attempt_at
+                FROM email_outbox ORDER BY id DESC LIMIT 25`),
+    ]);
+    for (const row of c.rows) counts[row.status] = row.n;
+    recent = r.rows;
+  }
+  res.json({
+    ...setup,
+    enabled: notifyEnabled(),
+    from: notifyConfig.from || null,
+    crmUrl: notifyConfig.crmUrl || null,
+    adminRecipients: notifyConfig.adminEmails,
+    counts,
+    recent,
+  });
+}));
+
+adminRouter.post('/notifications/test', wrap(async (req, res) => {
+  if (!notifyEnabled()) return res.status(400).json({ error: 'Email notifications are off. Set ESPOCRM_URL, ESPOCRM_API_KEY and NOTIFY_FROM on the website service.' });
+  const to = req.user?.email || notifyConfig.adminEmails[0];
+  if (!to) return res.status(400).json({ error: 'No address to send the test to.' });
+  await notify('test', to, { to });
+  await processOutbox();
+  const { rows } = await db.query(`SELECT status, last_error FROM email_outbox WHERE kind = 'test' ORDER BY id DESC LIMIT 1`);
+  const r = rows[0];
+  if (r?.status === 'sent') return res.json({ ok: true, to });
+  res.status(502).json({ error: r?.last_error ? `The CRM couldn't send it: ${r.last_error}` : 'The test email is queued but not sent yet.' });
+}));
+
+adminRouter.post('/notifications/:id/retry', wrap(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || !db) return res.status(400).json({ error: 'Invalid id' });
+  const { rowCount } = await db.query(
+    `UPDATE email_outbox SET status = 'pending', attempts = 0, next_attempt_at = now() WHERE id = $1 AND status = 'failed'`,
+    [id],
+  );
+  if (!rowCount) return res.status(404).json({ error: 'No failed email with that id.' });
+  await processOutbox();
+  res.json({ ok: true });
+}));
 
 adminRouter.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 

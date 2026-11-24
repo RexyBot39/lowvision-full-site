@@ -19,11 +19,19 @@
 import express from 'express';
 import { db } from './db.mjs';
 import { posthog, collectionEnabled } from './posthog.mjs';
+import { notify, notifyConfig } from './notify.mjs';
 
 export const publicApiRouter = express.Router();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const CONTACT_TYPES = ['incorrect-listing', 'suggest', 'help', 'accessibility', 'other'];
+const CONTACT_TYPE_LABELS = {
+  'incorrect-listing': 'Incorrect listing',
+  suggest: 'Suggest a resource',
+  help: 'Help finding services',
+  accessibility: 'Accessibility issue',
+  other: 'Other',
+};
 const BOT_RE = /bot|crawl|spider|slurp|preview|headless|lighthouse|monitor|curl|wget|python|node-fetch/i;
 const PATH_RE = /^\/[a-z0-9\-/._~]*$/i;
 
@@ -87,6 +95,7 @@ publicApiRouter.post('/contact', requireJson, makeLimiter(10, 60 * 60 * 1000), j
     [name, email, type, message],
   );
   res.status(201).json({ ok: true });
+  void notify('adminContactMessage', notifyConfig.adminEmails, { name, email, type: CONTACT_TYPE_LABELS[type] ?? type, message });
 }));
 
 // ── analytics ──────────────────────────────────────────────────────────────
