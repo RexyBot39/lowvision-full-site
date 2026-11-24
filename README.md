@@ -92,6 +92,10 @@ Setup: set `DATAFORSEO_LOGIN` and `DATAFORSEO_PASSWORD` (the API credentials
 from DataForSEO's API Access page) on the web service. The other `SEO_*`
 variables are optional (see `.env.example`).
 
+## Email notifications
+
+Professionals get emails about their directory listing (received, approved, changes needed, removed). Admins get emails for listings to review and new contact messages. They're sent **through EspoCRM** (`server/notify.mjs`), queued in the `email_outbox` table and retried if the CRM is unavailable. Setup and status are in `/admin` → Messages; the steps are in [`crm/README.md`](crm/README.md#5-website-email-notifications).
+
 ## Contact form
 
 `POST /api/contact` (`server/public-api.mjs`) saves messages to the

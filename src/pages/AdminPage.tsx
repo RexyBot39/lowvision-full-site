@@ -5,6 +5,7 @@ import { Card, Notice, StatTile } from '../components/admin/AdminUI';
 import { fmt, nf, niceTicks, useWidth } from '../components/admin/format';
 import { SeoPanel } from '../components/admin/SeoPanel';
 import { ListingsPanel } from '../components/admin/ListingsPanel';
+import { NotificationsCard } from '../components/admin/NotificationsCard';
 import { PageSEO } from '../components/seo/PageSEO';
 import { useAuth } from '../contexts/AuthContext';
 import { api, ApiError } from '../lib/api';
@@ -85,7 +86,7 @@ export function AdminPage() {
           </Notice>
         ) : (
           <>
-            <div role="tablist" aria-label="Admin sections" className="flex gap-1 border-b border-gray-200 mb-6">
+            <div role="tablist" aria-label="Admin sections" className="relative flex gap-1 border-b border-gray-200 mb-6 overflow-x-auto">
               <TabButton id="analytics" active={tab === 'analytics'} onSelect={() => setTab('analytics')}>
                 <BarChart3 className="h-4 w-4" aria-hidden="true" /> Analytics
               </TabButton>
@@ -113,7 +114,12 @@ export function AdminPage() {
               {tab === 'analytics' && <AnalyticsPanel />}
               {tab === 'seo' && <SeoPanel />}
               {tab === 'listings' && <ListingsPanel onCounts={setPendingListings} />}
-              {tab === 'messages' && <MessagesPanel onCounts={setNewCount} />}
+              {tab === 'messages' && (
+                <div className="space-y-6">
+                  <NotificationsCard />
+                  <MessagesPanel onCounts={setNewCount} />
+                </div>
+              )}
             </div>
             {tab !== 'messages' && <MessageCountLoader onCounts={setNewCount} />}
             {tab !== 'listings' && <ListingCountLoader onCounts={setPendingListings} />}
@@ -132,7 +138,7 @@ function TabButton({ id, active, onSelect, children }: { id: string; active: boo
       aria-selected={active}
       aria-controls={`panel-${id}`}
       onClick={onSelect}
-      className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 rounded-t-md ${
+      className={`flex shrink-0 items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 rounded-t-md ${
         active ? 'border-blue-700 text-blue-800' : 'border-transparent text-gray-600 hover:text-gray-900'
       }`}
     >

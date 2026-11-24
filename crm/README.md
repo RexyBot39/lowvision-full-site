@@ -84,7 +84,27 @@ The script matches organizations by name, so you can re-run it whenever the dire
 - **Claude Code on your computer:** set `ESPOCRM_API_KEY` in your shell before starting Claude Code. Approve the `espocrm` server when asked.
 - `npm run crm:sync` in a cloud session: set `ESPOCRM_API_KEY=proxy-injected`; the proxy replaces it with the real key.
 
-## 5. Send the outreach email
+## 5. Website email notifications
+
+The website sends its notifications through the CRM: it creates an Email in EspoCRM with status "Sending", and EspoCRM sends it over its outbound SMTP. Every notification is also kept in the CRM.
+
+| Email | To | When |
+|---|---|---|
+| Listing received | the professional | they submit a new listing, or changes to an approved one |
+| Listing approved / changes needed / removed | the professional | an admin acts on it in `/admin` → Listings (includes the reviewer's note) |
+| Listing to review | admins | a listing or change enters review |
+| New contact message | admins | someone uses the contact form ("Reply" goes to the sender) |
+
+**Set up once:**
+1. Finish step 2 above (outbound SMTP working, with a test email from EspoCRM).
+2. In **Administration → Outbound Emails**, set the system **From address** (e.g. `hello@lowvisionnavigator.org`) and tick **Is Shared**. EspoCRM only lets non-admin users, including the API user, send from the system address when it is shared.
+3. In **Administration → Roles**, edit (or create) the role for the website's API user. Set **Email** to *create: yes, read: own, edit: own*, and keep the other permissions it needs. Then open **Administration → API Users → your API user** and add that role in **Roles**. A role that isn't assigned has no effect.
+4. On the **website** Railway service, set `ESPOCRM_URL`, `ESPOCRM_API_KEY` and `NOTIFY_FROM` (the same address as step 2). Optionally set `NOTIFY_ADMIN_EMAILS`; it defaults to `ADMIN_EMAILS`.
+5. Redeploy. Then go to `/admin` → **Messages**, check the **Email notifications** card, and click **Send test email**. The card lists anything still missing in plain language.
+
+If the CRM or SMTP is briefly down, emails wait in the website's database and are retried after 1, 5, 15, 60 and 180 minutes. Failures show in the card's log with a **Retry** button.
+
+## 6. Send the outreach email
 
 1. **Campaigns → Create Campaign**, type **Email**, target list **"Low Vision Navigator outreach"**.
 2. Create an **Email Template**. EspoCRM adds an unsubscribe link to campaign emails; keep it.

@@ -20,7 +20,8 @@
 import express from 'express';
 import { db } from './db.mjs';
 import { loadUser } from './api.mjs';
-import { PROFESSION_SLUGS, SERVICE_MODE_KEYS, AGE_GROUP_KEYS, PAYMENT_KEYS } from './professions.mjs';
+import { PROFESSION_SLUGS, SERVICE_MODE_KEYS, AGE_GROUP_KEYS, PAYMENT_KEYS, professionLabel } from './professions.mjs';
+import { notify, notifyConfig } from './notify.mjs';
 
 export const directoryRouter = express.Router();
 
@@ -229,6 +230,18 @@ directoryRouter.put('/my-listing', requireUser, saveRateLimit, wrap(async (req, 
     [req.user.id, status, listing],
   );
   res.json({ listing: ownView(rows[0]) });
+
+  // Email only when the listing newly enters review, not on every save while it's already waiting.
+  if (status === 'pending' && row?.status !== 'pending') {
+    const isEdit = !!row?.published;
+    void notify('listingSubmitted', req.user.email, { name: listing.fullName, isEdit });
+    void notify('adminListingToReview', notifyConfig.adminEmails, {
+      name: listing.fullName,
+      professions: listing.specialties.map(professionLabel).join(', '),
+      isEdit,
+      accountEmail: req.user.email,
+    });
+  }
 }));
 
 directoryRouter.post('/my-listing/visibility', requireUser, wrap(async (req, res) => {

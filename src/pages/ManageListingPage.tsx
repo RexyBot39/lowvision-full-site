@@ -172,7 +172,7 @@ function StatusPanel({ own, onHide, onDelete, onEdit, editing }: {
   const s = {
     pending: own.hasPublishedVersion
       ? { icon: Clock, tone: 'amber', title: 'Your changes are under review', text: 'Your previously approved listing stays visible in the directory until the changes are approved.' }
-      : { icon: Clock, tone: 'amber', title: 'Submitted: under review', text: 'We check the license or certification you provided, usually within a few business days. Check back here for the result.' },
+      : { icon: Clock, tone: 'amber', title: 'Submitted: under review', text: 'We check the license or certification you provided, usually within a few business days. We’ll email you the result, and you can check back here anytime.' },
     approved: { icon: CheckCircle, tone: 'green', title: own.ownerHidden ? 'Approved, but hidden by you' : 'Live in the directory', text: own.ownerHidden ? 'Your listing is approved but not shown. Make it visible again anytime.' : 'People can find you in the directory under each profession you chose.' },
     rejected: { icon: XCircle, tone: 'red', title: 'Changes needed', text: own.hasPublishedVersion ? 'Your latest changes weren\'t approved. Your previously approved listing is still visible.' : 'Your listing wasn\'t approved yet. Please update it and resubmit.' },
     removed: { icon: AlertTriangle, tone: 'red', title: 'Removed from the directory', text: 'This listing was removed by Low Vision Navigator. Contact us if you think this was a mistake.' },
