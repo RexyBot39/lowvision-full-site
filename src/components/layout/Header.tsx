@@ -84,6 +84,7 @@ const navSections: NavSection[] = [
         heading: 'Search & Browse',
         links: [
           { label: 'Search the Directory', href: '/resources' },
+          { label: 'Find a Professional', href: '/find-a-professional' },
           { label: 'Virtual Services', href: '/resources?virtual=true' },
         ],
       },
@@ -121,6 +122,7 @@ const navSections: NavSection[] = [
       {
         heading: 'Tools & Templates',
         links: [
+          { label: 'List Your Practice (free)', href: '/professionals/list-your-practice' },
           { label: 'Templates & Handouts', href: '/professionals/templates' },
           { label: 'Training Library', href: '/professionals/training-library' },
           { label: 'Research & Evidence', href: '/professionals/research-evidence' },

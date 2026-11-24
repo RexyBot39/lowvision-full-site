@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { BarChart3, Mail, RefreshCw, ExternalLink, CheckCircle, Inbox, Search } from 'lucide-react';
+import { BarChart3, Mail, RefreshCw, ExternalLink, CheckCircle, Inbox, Search, Users } from 'lucide-react';
 import { Card, Notice, StatTile } from '../components/admin/AdminUI';
 import { fmt, nf, niceTicks, useWidth } from '../components/admin/format';
 import { SeoPanel } from '../components/admin/SeoPanel';
+import { ListingsPanel } from '../components/admin/ListingsPanel';
 import { PageSEO } from '../components/seo/PageSEO';
 import { useAuth } from '../contexts/AuthContext';
 import { api, ApiError } from '../lib/api';
@@ -32,7 +33,7 @@ interface ContactMessage {
   status: 'new' | 'handled'; created_at: string;
 }
 
-type Tab = 'analytics' | 'seo' | 'messages';
+type Tab = 'analytics' | 'seo' | 'listings' | 'messages';
 const RANGES = [7, 30, 90] as const;
 const TYPE_LABELS: Record<string, string> = {
   'incorrect-listing': 'Incorrect listing',
@@ -51,8 +52,9 @@ export function AdminPage() {
   const { user, loading } = useAuth();
   const [params, setParams] = useSearchParams();
   const tabParam = params.get('tab');
-  const tab: Tab = tabParam === 'messages' || tabParam === 'seo' ? tabParam : 'analytics';
+  const tab: Tab = tabParam === 'messages' || tabParam === 'seo' || tabParam === 'listings' ? tabParam : 'analytics';
   const [newCount, setNewCount] = useState<number | null>(null);
+  const [pendingListings, setPendingListings] = useState<number | null>(null);
 
   const setTab = (t: Tab) => {
     const next = new URLSearchParams(params);
@@ -90,6 +92,14 @@ export function AdminPage() {
               <TabButton id="seo" active={tab === 'seo'} onSelect={() => setTab('seo')}>
                 <Search className="h-4 w-4" aria-hidden="true" /> SEO
               </TabButton>
+              <TabButton id="listings" active={tab === 'listings'} onSelect={() => setTab('listings')}>
+                <Users className="h-4 w-4" aria-hidden="true" /> Listings
+                {pendingListings ? (
+                  <span className="ml-1 rounded-full bg-amber-500 text-white text-xs font-semibold px-2 py-0.5">
+                    {pendingListings}<span className="sr-only"> to review</span>
+                  </span>
+                ) : null}
+              </TabButton>
               <TabButton id="messages" active={tab === 'messages'} onSelect={() => setTab('messages')}>
                 <Mail className="h-4 w-4" aria-hidden="true" /> Messages
                 {newCount ? (
@@ -102,9 +112,11 @@ export function AdminPage() {
             <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
               {tab === 'analytics' && <AnalyticsPanel />}
               {tab === 'seo' && <SeoPanel />}
+              {tab === 'listings' && <ListingsPanel onCounts={setPendingListings} />}
               {tab === 'messages' && <MessagesPanel onCounts={setNewCount} />}
             </div>
             {tab !== 'messages' && <MessageCountLoader onCounts={setNewCount} />}
+            {tab !== 'listings' && <ListingCountLoader onCounts={setPendingListings} />}
           </>
         )}
       </div>
@@ -127,6 +139,16 @@ function TabButton({ id, active, onSelect, children }: { id: string; active: boo
       {children}
     </button>
   );
+}
+
+/** Pending directory listings, for the Listings tab badge. */
+function ListingCountLoader({ onCounts }: { onCounts: (n: number | null) => void }) {
+  useEffect(() => {
+    api<{ counts: { pending: number } }>('/admin/listings?status=pending')
+      .then((d) => onCounts(d.counts.pending))
+      .catch(() => onCounts(null));
+  }, [onCounts]);
+  return null;
 }
 
 function MessageCountLoader({ onCounts }: { onCounts: (n: number | null) => void }) {

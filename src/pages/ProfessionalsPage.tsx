@@ -116,6 +116,19 @@ export function ProfessionalsPage() {
           <DisclaimerBox text="These resources are designed to support—not replace—clinical judgment. Always apply professional expertise to individual patient situations." />
         </div>
 
+        <div className="mb-8 rounded-2xl border border-teal-200 bg-teal-50 p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0">
+            <Users className="h-5 w-5 text-teal-700" aria-hidden="true" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-base font-bold text-gray-900">Get listed in the Find a Professional directory</h2>
+            <p className="text-sm text-gray-700 mt-1">A free, reviewed listing helps patients, families and referring clinicians find you by profession, location and telehealth.</p>
+          </div>
+          <Link to="/professionals/list-your-practice" className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-teal-700 rounded-lg hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2">
+            List your practice <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+
         <div className="grid sm:grid-cols-2 gap-5">
           {sections.map(({ Icon, title, desc, href, links }) => (
             <div key={href} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-md transition-shadow">

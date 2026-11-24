@@ -22,6 +22,7 @@ import { db, migrate } from './db.mjs';
 import { apiRouter } from './api.mjs';
 import { publicApiRouter } from './public-api.mjs';
 import { adminRouter } from './admin-api.mjs';
+import { directoryRouter } from './directory-api.mjs';
 import { ingestProxy, collectionEnabled, reportingEnabled } from './posthog.mjs';
 import { startSeoScheduler } from './seo.mjs';
 import { chatRoute } from './chat-route.mjs';
@@ -68,6 +69,7 @@ app.post('/api/chat', (req, res, next) => chatRoute(req, res).catch(next));
 // "accounts unavailable" guard would otherwise answer these.
 app.use('/api', publicApiRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/directory', directoryRouter);
 app.use('/api', apiRouter);
 
 // Static files. Hashed assets are cached forever; HTML is always revalidated.
